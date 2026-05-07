@@ -3,207 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Updated Title -->
     <title>AIZON | Sovereign DeFAI Ecosystem</title>
     
-    <!-- Frameworks -->
+    <!-- Core Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700;800&family=Fira+Code:wght@400;500&display=swap');
         
-        :root { --accent: #00f2ff; --bg: #030507; }
+        :root { --accent: #00f2ff; --bg: #020406; }
         body { background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; height: 100vh; }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .neon-text { color: var(--accent); text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); }
+        
+        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .neon-glow { box-shadow: 0 0 20px rgba(0, 242, 255, 0.15); border: 1px solid rgba(0, 242, 255, 0.3); }
         .terminal-font { font-family: 'Fira Code', monospace; }
         
-        /* Smooth Page Transitions */
-        .page-enter { animation: slideUp 0.4s ease-out forwards; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        
+        @keyframes pulse-slow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+        .animate-pulse-slow { animation: pulse-slow 4s infinite; }
     </style>
 </head>
-<body x-data="aizonApp()" x-init="init()">
+<body x-data="aizonCore()" x-init="init()">
 
-    <!-- BOOT LOADER -->
-    <div x-show="loading" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center">
-        <h1 class="text-4xl font-black italic tracking-tighter mb-4">AI<span class="text-cyan-400">ZON</span></h1>
-        <div class="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
-            <div class="h-full bg-cyan-400 animate-[progress_2s_ease-in-out_infinite]" style="width: 30%"></div>
+    <!-- BOOT SEQUENCE -->
+    <div x-show="booting" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center">
+        <div class="mb-8 relative">
+            <div class="w-20 h-20 border-4 border-cyan-500/20 rounded-full animate-spin border-t-cyan-500"></div>
+            <div class="absolute inset-0 flex items-center justify-center font-black italic text-xs">AI</div>
         </div>
-        <p class="mt-4 terminal-font text-[10px] text-gray-500 uppercase tracking-widest">Starting Sovereign Kernel...</p>
+        <!-- Updated Branding -->
+        <h1 class="text-3xl font-black italic tracking-tighter">AI<span class="text-cyan-400">ZON</span></h1>
+        <p class="mt-4 terminal-font text-[10px] text-gray-500 uppercase tracking-[0.4em]">Initializing Sovereign Kernel...</p>
     </div>
 
-    <!-- SIDEBAR NAVIGATION -->
-    <nav class="fixed left-0 top-0 h-screen w-20 border-r border-white/5 flex flex-col items-center py-8 gap-10 bg-black/40 z-50">
-        <div class="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
-            <i data-lucide="shield-check" class="text-black w-6 h-6"></i>
-        </div>
-        <div class="flex flex-col gap-8 text-gray-500">
-            <button @click="view = 'dash'" :class="view === 'dash' && 'text-cyan-400'"><i data-lucide="layout-grid"></i></button>
-            <button @click="view = 'stake'" :class="view === 'stake' && 'text-cyan-400'"><i data-lucide="layers"></i></button>
-            <button @click="view = 'mlm'" :class="view === 'mlm' && 'text-cyan-400'"><i data-lucide="users"></i></button>
-            <button @click="view = 'terminal'" :class="view === 'terminal' && 'text-cyan-400'"><i data-lucide="terminal"></i></button>
-        </div>
-        <div class="mt-auto">
-            <button class="text-gray-700 hover:text-red-500"><i data-lucide="log-out"></i></button>
-        </div>
-    </nav>
-
-    <!-- TOP HEADER -->
-    <header class="fixed top-0 left-20 right-0 h-20 px-10 flex items-center justify-between border-b border-white/5 backdrop-blur-xl z-40">
-        <div class="flex items-center gap-6">
-            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Network: <span class="text-green-500">Mainnet-IN</span></span>
-            <div class="h-4 w-px bg-white/10"></div>
-            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Currency: <span class="text-cyan-400">INR (₹)</span></span>
-        </div>
-        <div class="flex items-center gap-6">
-            <div class="text-right">
-                <p class="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">Total Assets</p>
-                <p class="text-xl font-black italic">₹<span x-text="format(user.balance + user.staked)"></span></p>
-            </div>
-            <div class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                <i data-lucide="user" class="w-5 h-5 text-gray-400"></i>
-            </div>
-        </div>
-    </header>
-
-    <!-- MAIN WORKSPACE -->
-    <main class="ml-20 mt-20 p-8 h-[calc(100vh-5rem)] overflow-y-auto custom-scroll">
+    <!-- OS INTERFACE -->
+    <div class="h-screen w-screen flex relative overflow-hidden">
         
-        <!-- DASHBOARD -->
-        <div x-show="view === 'dash'" class="page-enter space-y-8">
-            <div class="grid grid-cols-12 gap-6">
-                <div class="col-span-8 glass p-10 rounded-[3rem] relative overflow-hidden">
-                    <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-[0.3em] mb-4">Total Portfolio</h3>
-                    <div class="flex items-end gap-4 mb-10">
-                        <h2 class="text-6xl font-black italic tracking-tighter">₹<span x-text="format(user.balance)"></span></h2>
-                        <span class="text-green-400 font-bold text-sm mb-2">+12.4% Today</span>
+        <!-- SIDE NAVIGATION -->
+        <nav class="w-20 glass m-4 rounded-[2.5rem] flex flex-col items-center py-10 gap-10 z-50">
+            <div class="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                <i data-lucide="shield-check" class="text-black w-6 h-6"></i>
+            </div>
+            
+            <div class="flex flex-col gap-8 text-gray-600">
+                <button @click="view = 'dash'" :class="view === 'dash' && 'text-cyan-400'"><i data-lucide="layout-grid"></i></button>
+                <button @click="view = 'wallet'" :class="view === 'wallet' && 'text-cyan-400'"><i data-lucide="wallet"></i></button>
+                <button @click="view = 'staking'" :class="view === 'staking' && 'text-cyan-400'"><i data-lucide="layers"></i></button>
+                <button @click="view = 'team'" :class="view === 'team' && 'text-cyan-400'"><i data-lucide="users"></i></button>
+            </div>
+
+            <div class="mt-auto flex flex-col gap-6 text-gray-700">
+                <button @click="view = 'admin'" class="hover:text-red-500"><i data-lucide="lock"></i></button>
+                <button @click="location.reload()"><i data-lucide="power"></i></button>
+            </div>
+        </nav>
+
+        <!-- MAIN WORKSPACE -->
+        <main class="flex-1 p-4 relative">
+            
+            <!-- STATUS HEADER -->
+            <header class="flex justify-between items-center px-10 py-5 glass rounded-[2rem] mb-6">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Mainnet Active</span>
                     </div>
-                    <div class="flex gap-4">
-                        <template x-for="coin in prices">
-                            <div class="px-5 py-3 bg-white/5 border border-white/5 rounded-2xl">
-                                <p class="text-[9px] text-gray-500 font-bold uppercase" x-text="coin.name"></p>
-                                <p class="text-sm font-bold">₹<span x-text="format(coin.price)"></span></p>
+                    <div class="h-4 w-px bg-white/10"></div>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Region: <span class="text-cyan-400">IN/Mumbai</span></span>
+                </div>
+                
+                <div class="flex items-center gap-8">
+                    <div class="text-right">
+                        <p class="text-[9px] text-gray-500 font-bold uppercase tracking-tighter">Liquid Balance</p>
+                        <!-- Ensured INR Symbol -->
+                        <p class="text-xl font-black italic">₹<span x-text="formatINR(user.balance)"></span></p>
+                    </div>
+                    <button @click="connectWeb3()" class="px-6 py-2 bg-white text-black rounded-xl font-black text-[10px] uppercase hover:bg-cyan-400 transition" x-text="walletAddr || 'Link Web3'"></button>
+                </div>
+            </header>
+
+            <!-- APP CANVAS -->
+            <div class="h-[calc(100vh-160px)] overflow-y-auto custom-scroll pr-2">
+                
+                <!-- VIEW: DASHBOARD -->
+                <div x-show="view === 'dash'" class="space-y-6">
+                    <div class="grid grid-cols-12 gap-6">
+                        <div class="col-span-8 glass p-10 rounded-[3rem] relative overflow-hidden neon-glow">
+                            <div class="absolute -right-10 -bottom-10 opacity-5"><i data-lucide="activity" class="w-64 h-64 text-cyan-400"></i></div>
+                            <h3 class="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.4em] mb-4">Account Portfolio</h3>
+                            <div class="flex items-end gap-4 mb-10">
+                                <h2 class="text-7xl font-black italic tracking-tighter">₹<span x-text="formatINR(user.balance + user.staked)"></span></h2>
+                                <span class="text-green-400 font-bold text-sm mb-3">+₹12,450 (Today)</span>
                             </div>
-                        </template>
+                            <div class="flex gap-4">
+                                <template x-for="coin in crypto">
+                                    <div class="px-5 py-3 bg-white/5 border border-white/5 rounded-2xl flex items-center gap-3">
+                                        <div class="w-2 h-2 rounded-full bg-cyan-500"></div>
+                                        <div>
+                                            <p class="text-[9px] text-gray-500 font-bold uppercase" x-text="coin.name"></p>
+                                            <p class="text-sm font-black">₹<span x-text="formatINR(coin.price)"></span></p>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        
+                        <div class="col-span-4 glass p-8 rounded-[3rem] flex flex-col justify-between border-l-4 border-cyan-500">
+                            <div>
+                                <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6">Instant Refill</h4>
+                                <div class="relative mb-6">
+                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">₹</span>
+                                    <input type="number" x-model="depositAmt" class="w-full bg-black/40 border border-white/10 rounded-2xl p-5 pl-10 text-2xl font-black outline-none focus:border-cyan-500" placeholder="0">
+                                </div>
+                                <button class="w-full bg-white text-black font-black py-5 rounded-2xl hover:scale-[1.02] transition shadow-xl uppercase text-xs tracking-widest">Initiate Deposit</button>
+                            </div>
+                            <p class="text-[10px] terminal-font text-gray-600 text-center uppercase tracking-widest">Powered by Razorpay Node</p>
+                        </div>
                     </div>
-                </div>
-                <div class="col-span-4 glass p-8 rounded-[3rem] flex flex-col justify-between border-l-4 border-cyan-500">
-                    <div>
-                        <h4 class="text-xs font-bold text-gray-500 uppercase mb-4">Quick Deposit</h4>
-                        <input type="number" class="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-2xl font-black mb-4 outline-none focus:border-cyan-500" placeholder="Amount">
-                        <button class="w-full bg-white text-black font-black py-4 rounded-2xl hover:bg-cyan-400 transition">DEPOSIT INR</button>
-                    </div>
-                    <p class="text-[10px] terminal-font text-gray-600 text-center uppercase tracking-widest">Secured via Razorpay Node</p>
-                </div>
-            </div>
 
-            <div class="grid grid-cols-3 gap-6">
-                <div class="glass p-8 rounded-3xl flex justify-between items-center border-b border-white/5">
-                    <div>
-                        <p class="text-xs text-gray-500 font-bold uppercase">Staked Balance</p>
-                        <p class="text-3xl font-black italic">₹<span x-text="format(user.staked)"></span></p>
+                    <div class="grid grid-cols-3 gap-6">
+                        <div class="glass p-8 rounded-3xl flex justify-between items-center">
+                            <div>
+                                <p class="text-[10px] text-gray-500 font-bold uppercase">Staked Assets</p>
+                                <p class="text-3xl font-black italic">₹<span x-text="formatINR(user.staked)"></span></p>
+                            </div>
+                            <i data-lucide="layers" class="text-cyan-400 opacity-20 w-10 h-10"></i>
+                        </div>
+                        <div class="glass p-8 rounded-3xl flex justify-between items-center border-l-4 border-purple-500">
+                            <div>
+                                <p class="text-[10px] text-gray-500 font-bold uppercase">Team Rewards</p>
+                                <p class="text-3xl font-black italic text-purple-400">₹<span x-text="formatINR(user.rewards)"></span></p>
+                            </div>
+                            <i data-lucide="gift" class="text-purple-500 opacity-20 w-10 h-10"></i>
+                        </div>
+                        <div class="glass p-8 rounded-3xl flex justify-between items-center border-l-4 border-red-500">
+                            <div>
+                                <p class="text-[10px] text-gray-500 font-bold uppercase">VDA Tax Reserve</p>
+                                <p class="text-3xl font-black italic text-red-500">₹<span x-text="formatINR((user.balance + user.staked) * 0.3)"></span></p>
+                            </div>
+                            <i data-lucide="info" class="text-red-500 opacity-20 w-10 h-10"></i>
+                        </div>
                     </div>
-                    <i data-lucide="lock" class="text-cyan-500 opacity-20 w-10 h-10"></i>
                 </div>
-                <div class="glass p-8 rounded-3xl flex justify-between items-center border-b border-white/5">
-                    <div>
-                        <p class="text-xs text-gray-500 font-bold uppercase">MLM Rewards</p>
-                        <p class="text-3xl font-black italic text-purple-400">₹<span x-text="format(user.rewards)"></span></p>
+
+                <!-- VIEW: STAKING -->
+                <div x-show="view === 'staking'" class="max-w-4xl mx-auto space-y-10 py-10">
+                    <div class="text-center">
+                        <h2 class="text-4xl font-black italic uppercase tracking-tighter">AI-Optimized Staking</h2>
+                        <p class="text-gray-500 mt-2">Generate on-chain yield powered by DeFAI algorithmic models.</p>
                     </div>
-                    <i data-lucide="gift" class="text-purple-500 opacity-20 w-10 h-10"></i>
-                </div>
-                <div class="glass p-8 rounded-3xl flex justify-between items-center border-b border-white/5">
-                    <div>
-                        <p class="text-xs text-gray-500 font-bold uppercase">Tax Liability</p>
-                        <p class="text-3xl font-black italic text-red-500">₹<span x-text="format(user.balance * 0.3)"></span></p>
+                    <div class="grid grid-cols-2 gap-8">
+                        <div class="glass p-10 rounded-[3.5rem] border border-white/5 hover:neon-glow transition group">
+                            <span class="bg-cyan-500/10 text-cyan-400 text-[10px] font-black px-4 py-1 rounded-full uppercase">Flexi Yield</span>
+                            <h3 class="text-3xl font-black mt-6">Aizon Alpha</h3>
+                            <p class="text-6xl font-black my-8 text-white">12.5% <span class="text-sm text-gray-500 tracking-normal font-bold">APR</span></p>
+                            <button class="w-full py-5 rounded-2xl border border-white/10 font-black group-hover:bg-white group-hover:text-black transition uppercase text-xs">Stake INR Now</button>
+                        </div>
+                        <div class="glass p-10 rounded-[3.5rem] border border-white/5 hover:neon-glow transition group">
+                            <span class="bg-purple-500/10 text-purple-400 text-[10px] font-black px-4 py-1 rounded-full uppercase">Locked Yield</span>
+                            <h3 class="text-3xl font-black mt-6">Sovereign VIP</h3>
+                            <p class="text-6xl font-black my-8 text-purple-400">32.0% <span class="text-sm text-gray-500 tracking-normal font-bold">APR</span></p>
+                            <button class="w-full py-5 rounded-2xl bg-purple-600 font-black shadow-lg shadow-purple-600/20 hover:scale-[1.02] transition uppercase text-xs">Unlock Access</button>
+                        </div>
                     </div>
-                    <i data-lucide="info" class="text-red-500 opacity-20 w-10 h-10"></i>
                 </div>
-            </div>
-        </div>
 
-        <!-- STAKING -->
-        <div x-show="view === 'stake'" class="page-enter max-w-4xl mx-auto space-y-8 py-10 text-center">
-            <h2 class="text-4xl font-black italic uppercase tracking-tighter">Flexi-Stake Pools</h2>
-            <div class="grid grid-cols-2 gap-8">
-                <div class="glass p-10 rounded-[3rem] border border-white/5 hover:border-cyan-500/30 transition group">
-                    <span class="text-[10px] font-black bg-cyan-500/10 text-cyan-400 px-4 py-1 rounded-full uppercase">Basic Yield</span>
-                    <h3 class="text-3xl font-black mt-6 mb-2">Alpha Plan</h3>
-                    <p class="text-5xl font-black text-cyan-400 my-6">12.5% <span class="text-sm text-gray-500 font-bold">APR</span></p>
-                    <button class="w-full py-4 rounded-2xl border border-white/10 font-bold group-hover:bg-white group-hover:text-black transition">STAKE NOW</button>
+                <!-- VIEW: TEAM -->
+                <div x-show="view === 'team'" class="space-y-8">
+                    <div class="flex justify-between items-end">
+                        <h2 class="text-4xl font-black italic uppercase tracking-tighter">Network Architecture</h2>
+                        <div class="glass px-6 py-4 rounded-2xl flex items-center gap-6">
+                            <span class="text-xs font-bold text-gray-500 uppercase">Referral Link:</span>
+                            <span class="text-cyan-400 font-black tracking-widest" x-text="'AIZON.VIP/REF/' + user.ref"></span>
+                            <button class="text-gray-500 hover:text-white"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-4 gap-6">
+                        <div class="glass p-8 rounded-3xl text-center">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Team Nodes</p>
+                            <p class="text-4xl font-black">154</p>
+                        </div>
+                        <div class="glass p-8 rounded-3xl text-center">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Direct Referrals</p>
+                            <p class="text-4xl font-black">28</p>
+                        </div>
+                        <div class="glass p-8 rounded-3xl text-center border-b-4 border-cyan-500">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Network Volume</p>
+                            <p class="text-4xl font-black italic">₹1.2Cr</p>
+                        </div>
+                        <div class="glass p-8 rounded-3xl text-center">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Your Rank</p>
+                            <p class="text-2xl font-black text-cyan-400 italic">MASTER NODE</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="glass p-10 rounded-[3rem] border border-white/5 hover:border-purple-500/30 transition group">
-                    <span class="text-[10px] font-black bg-purple-500/10 text-purple-400 px-4 py-1 rounded-full uppercase">High Yield</span>
-                    <h3 class="text-3xl font-black mt-6 mb-2">Sovereign VIP</h3>
-                    <p class="text-5xl font-black text-purple-400 my-6">32.0% <span class="text-sm text-gray-500 font-bold">APR</span></p>
-                    <button class="w-full py-4 rounded-2xl bg-purple-600 font-bold shadow-lg shadow-purple-600/20 group-hover:scale-105 transition">STAKE NOW</button>
-                </div>
-            </div>
-        </div>
 
-        <!-- MLM NETWORK -->
-        <div x-show="view === 'mlm'" class="page-enter space-y-8">
-            <div class="flex justify-between items-center">
-                <h2 class="text-4xl font-black italic uppercase tracking-tighter">Affiliate Network</h2>
-                <div class="glass px-6 py-3 rounded-2xl flex items-center gap-4">
-                    <span class="text-xs font-bold text-gray-500 uppercase">Code:</span>
-                    <span class="text-cyan-400 font-black tracking-widest">AIZON-2026-X</span>
-                </div>
             </div>
-            <div class="grid grid-cols-4 gap-6">
-                <div class="glass p-8 rounded-3xl text-center">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Team Size</p>
-                    <p class="text-4xl font-black">154</p>
-                </div>
-                <div class="glass p-8 rounded-3xl text-center">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Direct Referrals</p>
-                    <p class="text-4xl font-black">28</p>
-                </div>
-                <div class="glass p-8 rounded-3xl text-center border-b-4 border-cyan-500">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Active Nodes</p>
-                    <p class="text-4xl font-black">112</p>
-                </div>
-                <div class="glass p-8 rounded-3xl text-center border-b-4 border-purple-500">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Rank</p>
-                    <p class="text-2xl font-black text-purple-400 italic">ELITE</p>
-                </div>
-            </div>
-        </div>
-
-    </main>
+        </main>
+    </div>
 
     <script>
-        function aizonApp() {
+        function aizonCore() {
             return {
-                loading: true,
+                booting: true,
                 view: 'dash',
-                prices: [
-                    { name: 'BTC', price: 5420000 },
-                    { name: 'ETH', price: 285000 },
-                    { name: 'SOL', price: 12400 }
-                ],
+                walletAddr: null,
+                depositAmt: 0,
                 user: {
-                    balance: 1250000,
+                    balance: 1450000,
                     staked: 450000,
-                    rewards: 24200
+                    rewards: 24200,
+                    ref: 'MUM-772'
                 },
+                crypto: [
+                    { name: 'Bitcoin', price: 5845000 },
+                    { name: 'Ethereum', price: 285000 },
+                    { name: 'Solana', price: 12400 }
+                ],
 
                 init() {
                     setTimeout(() => {
-                        this.loading = false;
+                        this.booting = false;
                         lucide.createIcons();
-                    }, 2000);
+                    }, 2500);
 
-                    // Mock live price update
+                    // Mock live updates
                     setInterval(() => {
-                        this.prices.forEach(p => p.price += (Math.random() - 0.5) * 1000);
-                    }, 3000);
+                        this.crypto.forEach(c => c.price += (Math.random() - 0.5) * 2000);
+                    }, 4000);
                 },
 
-                format(val) {
+                async connectWeb3() {
+                    if (window.ethereum) {
+                        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                        this.walletAddr = accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4);
+                    } else {
+                        alert("MetaMask not detected.");
+                    }
+                },
+
+                // Logic for en-IN currency formatting (Lakhs/Crores system)
+                formatINR(val) {
                     return new Intl.NumberFormat('en-IN').format(Math.floor(val));
                 }
             }
