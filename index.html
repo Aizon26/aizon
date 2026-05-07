@@ -3,145 +3,359 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORIZON VIP | Sovereign DeFAI Portal</title>
+    <title>AIZON | Sovereign DeFAI OS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;600;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: white; }
-        .vip-card { background: linear-gradient(145deg, #1a1a1a, #0d0d0d); border: 1px solid #333; }
-        .gold-text { background: linear-gradient(to right, #facc15, #eab308); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .numeric { font-variant-numeric: tabular-nums; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;700;800&family=Fira+Code:wght@400;500&display=swap');
+        :root { --accent: #00f2ff; --bg: #030507; }
+        body { background: var(--bg); color: white; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .app-window { position: absolute; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .terminal-font { font-family: 'Fira Code', monospace; }
+        [x-cloak] { display: none !important; }
     </style>
 </head>
-<body x-data="orizonApp()">
+<body x-data="aizonOS()" x-init="initOS()">
 
-    <!-- TOP NAVIGATION -->
-    <nav class="flex justify-between items-center px-6 py-4 border-b border-white/5 bg-black/50 backdrop-blur-md sticky top-0 z-50">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-                <i data-lucide="crown" class="text-black w-5"></i>
-            </div>
-            <span class="font-extrabold tracking-tighter text-xl italic uppercase">Orizon<span class="text-yellow-500">VIP</span></span>
+    <!-- BACKGROUND NEBULA -->
+    <div class="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_50%_50%,_rgba(0,242,255,0.05),_transparent_50%)]"></div>
+
+    <!-- BOOT SCREEN -->
+    <div x-show="booting" class="fixed inset-0 z-[100] bg-black flex items-center justify-center flex-col">
+        <h1 class="text-5xl font-black italic tracking-tighter mb-4">AI<span class="text-cyan-400">ZON</span></h1>
+        <div class="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
+            <div class="h-full bg-cyan-400 animate-[progress_2s_ease-in-out]" style="width: 100%"></div>
         </div>
-        <div class="flex items-center gap-4">
-            <div class="text-right hidden md:block">
-                <p class="text-[10px] text-gray-500 font-bold uppercase">Account ID</p>
-                <p class="text-xs font-mono">ORI-7742-IND</p>
-            </div>
-            <button class="bg-white/10 p-2 rounded-full"><i data-lucide="bell" class="w-5"></i></button>
+    </div>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <nav class="fixed left-0 top-0 h-screen w-20 border-r border-white/5 flex flex-col items-center py-8 gap-8 bg-black/40 z-50">
+        <div class="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(0,242,255,0.3)]">
+            <i data-lucide="zap" class="text-black"></i>
+        </div>
+        <div class="flex flex-col gap-6 text-gray-500">
+            <button @click="activeApp = 'dash'" :class="activeApp === 'dash' && 'text-cyan-400'"><i data-lucide="layout-grid"></i></button>
+            <button @click="activeApp = 'wallet'" :class="activeApp === 'wallet' && 'text-cyan-400'"><i data-lucide="wallet"></i></button>
+            <button @click="activeApp = 'stake'" :class="activeApp === 'stake' && 'text-cyan-400'"><i data-lucide="layers"></i></button>
+            <button @click="activeApp = 'mlm'" :class="activeApp === 'mlm' && 'text-cyan-400'"><i data-lucide="users"></i></button>
+            <button @click="activeApp = 'terminal'" :class="activeApp === 'terminal' && 'text-cyan-400'"><i data-lucide="terminal"></i></button>
+        </div>
+        <div class="mt-auto flex flex-col gap-6">
+            <button @click="activeApp = 'admin'" class="text-red-500/50 hover:text-red-500"><i data-lucide="shield-check"></i></button>
+            <button @click="activeApp = 'profile'"><i data-lucide="settings"></i></button>
         </div>
     </nav>
 
-    <!-- MAIN DASHBOARD -->
-    <main class="max-w-4xl mx-auto p-6 space-y-6">
+    <!-- TOP BAR -->
+    <header class="fixed top-0 left-20 right-0 h-20 px-10 flex items-center justify-between border-b border-white/5 bg-black/20 z-40">
+        <div class="flex items-center gap-4">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">System Time: <span x-text="time"></span></span>
+            <div class="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-[10px] text-green-400">Node: MUM-01 (Online)</div>
+        </div>
         
-        <!-- WALLET SUMMARY -->
-        <div class="vip-card rounded-[2rem] p-8 shadow-2xl relative overflow-hidden">
-            <div class="absolute -right-10 -top-10 opacity-5">
-                <i data-lucide="shield" class="w-64 h-64"></i>
+        <div class="flex items-center gap-6">
+            <div class="text-right">
+                <p class="text-[9px] text-gray-500 font-bold uppercase">Sovereign Balance</p>
+                <p class="text-lg font-black italic">₹<span x-text="formatINR(user.inrBalance)"></span></p>
             </div>
-            
-            <div class="relative z-10">
-                <p class="text-sm text-gray-400 font-medium mb-1">Total Assets Portfolio</p>
-                <h1 class="text-5xl font-black mb-6">₹<span x-text="format(totalWorth)"></span></h1>
+            <button @click="connectWeb3()" class="px-5 py-2 rounded-xl bg-white text-black font-bold text-xs hover:bg-cyan-400 transition" x-text="walletAddress || 'Connect Wallet'"></button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="ml-20 mt-20 p-10 h-[calc(100vh-5rem)] overflow-hidden relative">
+
+        <!-- DASHBOARD APP -->
+        <div x-show="activeApp === 'dash'" x-transition class="h-full grid grid-cols-12 gap-6">
+            <div class="col-span-8 space-y-6">
+                <div class="glass p-10 rounded-[2.5rem] relative overflow-hidden">
+                    <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-2">Portfolio Valuation</h3>
+                    <h2 class="text-5xl font-black">₹<span x-text="formatINR(totalWorth)"></span></h2>
+                    <div class="mt-8 flex gap-4">
+                        <template x-for="(price, coin) in cryptoPrices">
+                            <div class="px-4 py-2 bg-white/5 rounded-xl border border-white/5">
+                                <span class="text-[10px] text-gray-500 uppercase" x-text="coin"></span>
+                                <p class="text-sm font-bold">₹<span x-text="formatINR(price)"></span></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
                 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
-                        <p class="text-[10px] uppercase text-gray-500 font-bold">24h Earnings</p>
-                        <p class="text-lg font-bold text-green-400">+₹<span x-text="format(dailyProfit)"></span></p>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="glass p-8 rounded-3xl">
+                        <p class="text-xs font-bold text-gray-500 mb-4">ACTIVE STAKING</p>
+                        <p class="text-2xl font-black">₹<span x-text="formatINR(user.stakedAmount)"></span></p>
+                        <button @click="activeApp = 'stake'" class="mt-4 text-xs text-cyan-400 font-bold">Manage Plans →</button>
                     </div>
-                    <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
-                        <p class="text-[10px] uppercase text-gray-500 font-bold">VIP Status</p>
-                        <p class="text-lg font-bold gold-text">Level 4 (Elite)</p>
+                    <div class="glass p-8 rounded-3xl">
+                        <p class="text-xs font-bold text-gray-500 mb-4">TEAM EARNINGS</p>
+                        <p class="text-2xl font-black text-green-400">₹<span x-text="formatINR(user.mlmEarnings)"></span></p>
+                        <button @click="activeApp = 'mlm'" class="mt-4 text-xs text-green-400 font-bold">View Tree →</button>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- STAKING & YIELD SECTION -->
-        <div class="space-y-4">
-            <div class="flex justify-between items-end">
-                <h2 class="text-lg font-bold italic">Active DeFAI Yields</h2>
-                <span class="text-[10px] text-gray-500 font-bold">Last update: Just now</span>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Mining Card 1 -->
-                <div class="vip-card p-6 rounded-3xl border-l-4 border-l-yellow-500">
-                    <div class="flex justify-between mb-4">
-                        <span class="text-xs font-bold text-gray-400 uppercase">ORI Algorithmic Staking</span>
-                        <i data-lucide="cpu" class="w-4 text-yellow-500"></i>
-                    </div>
-                    <p class="text-2xl font-black">₹<span x-text="format(148500)"></span></p>
-                    <div class="mt-4 flex items-center justify-between">
-                        <span class="text-[10px] bg-green-500/10 text-green-400 px-2 py-1 rounded">Mining Active</span>
-                        <span class="text-xs font-bold">12.5% APY</span>
-                    </div>
-                </div>
-
-                <!-- Mining Card 2 -->
-                <div class="vip-card p-6 rounded-3xl border-l-4 border-l-blue-500">
-                    <div class="flex justify-between mb-4">
-                        <span class="text-xs font-bold text-gray-400 uppercase">Global Liquidity Pool</span>
-                        <i data-lucide="refresh-ccw" class="w-4 text-blue-500"></i>
-                    </div>
-                    <p class="text-2xl font-black">₹<span x-text="format(85200)"></span></p>
-                    <div class="mt-4 flex items-center justify-between">
-                        <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded">Syncing...</span>
-                        <span class="text-xs font-bold">9.2% APY</span>
-                    </div>
+            <!-- RECENT TRANSACTIONS -->
+            <div class="col-span-4 glass rounded-[2.5rem] p-8 flex flex-col">
+                <h3 class="text-xs font-bold uppercase mb-6">Live Logs</h3>
+                <div class="flex-1 space-y-4 overflow-y-auto pr-2 custom-scroll">
+                    <template x-for="tx in transactions">
+                        <div class="flex justify-between items-center p-3 rounded-2xl bg-white/5 border border-white/5">
+                            <div>
+                                <p class="text-xs font-bold" x-text="tx.type"></p>
+                                <p class="text-[9px] text-gray-500" x-text="tx.date"></p>
+                            </div>
+                            <p class="text-xs font-black" :class="tx.amount > 0 ? 'text-green-400' : 'text-red-400'" x-text="(tx.amount > 0 ? '+' : '') + '₹' + formatINR(Math.abs(tx.amount))"></p>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>
 
-        <!-- TAX COMPLIANCE CENTER (INDIAN REGULATION) -->
-        <div class="vip-card rounded-[2rem] p-6 border-t border-red-500/20">
-            <div class="flex items-center gap-2 mb-4">
-                <i data-lucide="info" class="w-4 text-red-400"></i>
-                <h3 class="text-xs font-bold text-red-400 uppercase tracking-widest">Tax & Regulatory Overview</h3>
+        <!-- WALLET / DEPOSIT APP -->
+        <div x-show="activeApp === 'wallet'" class="h-full flex items-center justify-center">
+            <div class="glass w-full max-w-md p-10 rounded-[3rem] text-center">
+                <i data-lucide="arrow-down-to-line" class="w-12 h-12 text-cyan-400 mx-auto mb-6"></i>
+                <h2 class="text-2xl font-black mb-2">Fund INR Wallet</h2>
+                <p class="text-xs text-gray-500 mb-8">Instant Deposit via UPI / Netbanking</p>
+                <input type="number" x-model="depositAmount" class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-center text-2xl font-bold mb-6 outline-none focus:ring-2 ring-cyan-400" placeholder="0.00">
+                <button @click="initiateRazorpay()" class="w-full bg-cyan-500 text-black font-bold py-4 rounded-2xl shadow-lg shadow-cyan-500/20 hover:scale-105 transition">DEPOSIT NOW</button>
             </div>
-            
-            <div class="space-y-4">
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-gray-400">VDA Tax Liability (30%)</span>
-                    <span class="font-bold text-red-400">- ₹<span x-text="format(totalWorth * 0.3)"></span></span>
+        </div>
+
+        <!-- STAKING APP -->
+        <div x-show="activeApp === 'stake'" class="h-full space-y-6 overflow-y-auto pr-4 custom-scroll">
+            <h2 class="text-3xl font-black italic">Flexi Stake Engine</h2>
+            <div class="grid grid-cols-3 gap-6">
+                <template x-for="plan in stakingPlans">
+                    <div class="glass p-8 rounded-[2rem] border-t-4" :style="`border-top-color: ${plan.color}`">
+                        <p class="text-xs font-bold uppercase text-gray-500" x-text="plan.name"></p>
+                        <h4 class="text-3xl font-black my-4" x-text="plan.apr + '%'"></p>
+                        <p class="text-[10px] text-gray-400 mb-6" x-text="plan.desc"></p>
+                        <button @click="stakeNow(plan.id)" class="w-full py-3 rounded-xl bg-white/10 hover:bg-white hover:text-black font-bold transition text-xs">STAKE NOW</button>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- MLM APP -->
+        <div x-show="activeApp === 'mlm'" class="h-full flex flex-col">
+            <div class="flex justify-between items-end mb-10">
+                <div>
+                    <h2 class="text-3xl font-black italic">Affiliate Network</h2>
+                    <p class="text-xs text-gray-500 mt-2">Referral Code: <span class="text-cyan-400 font-bold" x-text="user.referralCode"></span></p>
                 </div>
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-gray-400">TDS Reserve (1%)</span>
-                    <span class="font-bold">- ₹<span x-text="format(totalWorth * 0.01)"></span></span>
+                <button class="px-6 py-2 bg-white/5 rounded-xl border border-white/10 text-xs font-bold">Copy Link</button>
+            </div>
+            <div class="grid grid-cols-4 gap-6">
+                <div class="glass p-6 rounded-2xl text-center">
+                    <p class="text-[10px] text-gray-500 font-bold">TOTAL DIRECTS</p>
+                    <p class="text-2xl font-black" x-text="user.referralCount"></p>
                 </div>
-                <hr class="border-white/5">
-                <div class="flex justify-between items-center">
-                    <span class="font-bold italic">Withdrawable Net Profit</span>
-                    <span class="text-xl font-black text-green-400">₹<span x-text="format(totalWorth * 0.69)"></span></span>
+                <div class="glass p-6 rounded-2xl text-center">
+                    <p class="text-[10px] text-gray-500 font-bold">TEAM SIZE</p>
+                    <p class="text-2xl font-black" x-text="user.teamSize"></p>
                 </div>
             </div>
         </div>
 
-        <!-- ACTION DOCK -->
-        <div class="flex gap-4">
-            <button class="flex-1 bg-yellow-500 text-black font-black py-4 rounded-2xl hover:scale-[1.02] transition active:scale-95">DEPOSIT</button>
-            <button class="flex-1 bg-white text-black font-black py-4 rounded-2xl hover:scale-[1.02] transition active:scale-95">WITHDRAW</button>
+        <!-- TERMINAL APP -->
+        <div x-show="activeApp === 'terminal'" class="h-full glass rounded-[2.5rem] flex flex-col p-8 overflow-hidden">
+            <div class="flex-1 terminal-font text-xs text-cyan-400 overflow-y-auto space-y-2 mb-4 custom-scroll" id="term-out">
+                <div>AIZON OS [Version 1.0.4]</div>
+                <div>(c) 2026 AIZON Sovereign Systems. All rights reserved.</div>
+                <template x-for="log in termLogs">
+                    <div x-html="log"></div>
+                </template>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="terminal-font text-cyan-400">$</span>
+                <input type="text" x-model="termInput" @keyup.enter="execTerm()" class="flex-1 bg-transparent terminal-font text-xs outline-none border-none p-0" autofocus>
+            </div>
         </div>
+
     </main>
 
     <script>
-        function orizonApp() {
+        function aizonOS() {
             return {
-                totalWorth: 2450000, // Total base portfolio in INR
-                dailyProfit: 12400,
-                
-                format(n) {
-                    return new Intl.NumberFormat('en-IN').format(Math.floor(n));
+                booting: true,
+                activeApp: 'dash',
+                time: '',
+                walletAddress: null,
+                user: {
+                    inrBalance: 450000.00,
+                    stakedAmount: 125000.00,
+                    mlmEarnings: 24200.00,
+                    referralCode: 'AIZ-99-X',
+                    referralCount: 12,
+                    teamSize: 148
+                },
+                cryptoPrices: { btc: 5840000, eth: 310000, ori: 1250 },
+                transactions: [
+                    { type: 'DEPOSIT', amount: 50000, date: '2026-05-01' },
+                    { type: 'STAKE', amount: -25000, date: '2026-05-02' }
+                ],
+                stakingPlans: [
+                    { id: 1, name: 'Core Flex', apr: 12, desc: 'Daily liquidity, weekly compounding.', color: '#00f2ff' },
+                    { id: 2, name: 'Sovereign Lock', apr: 24, desc: '90-day lock period for maximum yield.', color: '#facc15' },
+                    { id: 3, name: 'Deep Stake', apr: 36, desc: 'Institutional grade 1-year yield.', color: '#f87171' }
+                ],
+                termInput: '',
+                termLogs: ['Type "help" for a list of commands.'],
+                depositAmount: 1000,
+
+                initOS() {
+                    setTimeout(() => { this.booting = false; }, 2000);
+                    setInterval(() => { this.time = new Date().toLocaleTimeString(); }, 1000);
+                    this.fetchPrices();
+                    lucide.createIcons();
                 },
 
-                init() {
-                    lucide.createIcons();
-                }
+                async fetchPrices() {
+                    try {
+                        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=inr');
+                        const data = await res.json();
+                        this.cryptoPrices.btc = data.bitcoin.inr;
+                        this.cryptoPrices.eth = data.ethereum.inr;
+                    } catch (e) { console.error("API error", e); }
+                },
+
+                async connectWeb3() {
+                    if (window.ethereum) {
+                        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                        this.walletAddress = accounts[0].substring(0, 6) + '...' + accounts[0].substring(38);
+                        this.addTermLog(`[SUCCESS] Wallet connected: ${accounts[0]}`);
+                    }
+                },
+
+                initiateRazorpay() {
+                    const options = {
+                        key: "YOUR_RAZORPAY_KEY",
+                        amount: this.depositAmount * 100,
+                        currency: "INR",
+                        name: "AIZON",
+                        handler: function(response) {
+                            alert("Payment Successful ID: " + response.razorpay_payment_id);
+                        }
+                    };
+                    const rzp = new Razorpay(options);
+                    rzp.open();
+                },
+
+                execTerm() {
+                    const cmd = this.termInput.toLowerCase();
+                    this.addTermLog(`$ ${this.termInput}`);
+                    if (cmd === 'help') this.addTermLog("Commands: price, balance, stake, clear, portfolio");
+                    else if (cmd === 'price btc') this.addTermLog(`BTC/INR: ₹${this.formatINR(this.cryptoPrices.btc)}`);
+                    else if (cmd === 'clear') this.termLogs = [];
+                    else this.addTermLog(`Command not found: ${cmd}`);
+                    this.termInput = '';
+                },
+
+                addTermLog(msg) {
+                    this.termLogs.push(msg);
+                    this.$nextTick(() => {
+                        const out = document.getElementById('term-out');
+                        out.scrollTop = out.scrollHeight;
+                    });
+                },
+
+                formatINR(n) { return new Intl.NumberFormat('en-IN').format(n); }
             }
         }
     </script>
 </body>
 </html>
+const express = require('express');
+const admin = require('firebase-admin');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+require('dotenv').config();
+
+const app = express();
+app.use(express.json());
+
+// Initialize Firebase Admin
+admin.initializeApp({
+  credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_CONFIG))
+});
+const db = admin.firestore();
+
+// Razorpay Setup
+const rzp = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY,
+  key_secret: process.env.RAZORPAY_SECRET
+});
+
+// Middleware: Verify Token
+const verifyToken = async (req, res, next) => {
+  const token = req.headers.authorization?.split('Bearer ')[1];
+  if (!token) return res.status(401).send('Unauthorized');
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    req.uid = decoded.uid;
+    next();
+  } catch (e) { res.status(401).send('Invalid Token'); }
+};
+
+// API: Create Razorpay Order
+app.post('/api/payments/order', verifyToken, async (req, res) => {
+  const { amount } = req.body;
+  const options = {
+    amount: amount * 100, // INR in paise
+    currency: "INR",
+    receipt: `receipt_${Date.now()}`
+  };
+  const order = await rzp.orders.create(options);
+  res.json(order);
+});
+
+// Webhook: Handle Payment Success
+app.post('/api/payments/webhook', async (req, res) => {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const signature = req.headers['x-razorpay-signature'];
+  
+  const expectedSignature = crypto.createHmac('sha256', secret)
+    .update(JSON.stringify(req.body)).digest('hex');
+
+  if (signature === expectedSignature) {
+    const payment = req.body.payload.payment.entity;
+    // logic: Update user balance in Firestore
+    // logic: Trigger MLM referral commission logic here
+    res.status(200).send('OK');
+  }
+});
+
+// MLM Referral Engine Logic
+async function processReferral(uid, amount) {
+  const userRef = db.collection('users').doc(uid);
+  const user = (await userRef.get()).data();
+  
+  if (user.referredBy) {
+    const parentRef = db.collection('users').doc(user.referredBy);
+    const parent = (await parentRef.get()).data();
+    const commission = amount * 0.10; // 10% direct bonus
+    await parentRef.update({ 
+        inrBalance: admin.firestore.FieldValue.increment(commission),
+        mlmEarnings: admin.firestore.FieldValue.increment(commission)
+    });
+  }
+}
+
+app.listen(process.env.PORT || 3000, () => console.log('Sovereign Node Active'));// Add these to the aizonOS() object for Admin
+async fetchAllUsers() {
+    if(!this.isAdmin) return;
+    const users = await db.collection('users').get();
+    this.adminData.users = users.docs.map(doc => doc.data());
+},
+
+async approveWithdrawal(txId) {
+    await fetch(`/api/admin/withdrawals/${txId}/approve`, { method: 'POST' });
+    this.addTermLog("[ADMIN] Withdrawal Approved.");
+}
