@@ -1,227 +1,389 @@
-const express = require('express');
-const cors = require('cors');
-const admin = require('firebase-admin');
-require('dotenv').config();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIZON | Sovereign DeFAI OS</title>
+    
+    <!-- Frameworks & UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+        
+        :root { --neon-cyan: #00f2ff; --bg-dark: #020406; }
+        body { background-color: var(--bg-dark); color: white; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
+        
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .neon-border { border: 1px solid var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
+        .terminal-text { font-family: 'Fira Code', monospace; }
+        
+        /* App Window Animation */
+        .app-window { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style>
+</head>
+<body x-data="aizonOS()" x-init="boot()">
 
-// Firebase Admin Setup
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-
-const db = admin.firestore();
-
-// Middleware: Firebase Auth
-const verifyToken = async (req, res, next) => {
-  const token = req.headers.authorization?.split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
-  try {
-    const decoded = await admin.auth().verifyIdToken(token);
-    req.user = decoded;
-    next();
-  } catch (e) { res.status(401).json({ error: 'Invalid Token' }); }
-};
-
-// --- SERVICES ---
-const getPrices = async () => {
-    // Simple fetch from CoinGecko
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,matic-network&vs_currencies=inr');
-    return await res.json();
-};
-
-// --- ROUTES ---
-
-// 1. Payment (Razorpay Structure)
-const Razorpay = require('razorpay');
-const rzp = new Razorpay({ key_id: process.env.RZP_ID, key_secret: process.env.RZP_SECRET });
-
-app.post('/api/payment/create-order', verifyToken, async (req, res) => {
-  const options = { amount: req.body.amount * 100, currency: "INR" };
-  const order = await rzp.orders.create(options);
-  res.json(order);
-});
-
-// 2. Trading Logic
-app.post('/api/trade/buy', verifyToken, async (req, res) => {
-  const { coin, amountINR } = req.body;
-  const prices = await getPrices();
-  const coinPrice = prices[coin].inr;
-  const quantity = amountINR / coinPrice;
-
-  const userRef = db.collection('users').doc(req.user.uid);
-  await db.runTransaction(async (t) => {
-    const doc = await t.get(userRef);
-    const newBalance = doc.data().inrBalance - amountINR;
-    if (newBalance < 0) throw 'Insufficient Balance';
-    t.update(userRef, { inrBalance: newBalance });
-    t.set(db.collection('transactions').doc(), { uid: req.user.uid, type: 'BUY', coin, quantity, amountINR, date: new Date() });
-  });
-  res.json({ success: true });
-});
-
-// 3. MLM Referral System
-app.get('/api/referral', verifyToken, async (req, res) => {
-  const snapshot = await db.collection('users').where('referredBy', '==', req.user.uid).get();
-  const team = snapshot.docs.map(doc => doc.data());
-  res.json({ teamSize: team.length, earnings: team.length * 500 }); // Example: 500 INR per referral
-});
-
-// 4. Admin Panel
-app.get('/api/admin/users', verifyToken, async (req, res) => {
-  // Add role check logic here
-  const snapshot = await db.collection('users').get();
-  res.json(snapshot.docs.map(doc => doc.data()));
-});
-
-app.listen(process.env.PORT || 5000, () => console.log('AIZON Server Running'));
-        import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { LayoutGrid, Wallet, Share2, Terminal, Shield, Settings, User } from 'lucide-react';
-import Dashboard from './pages/Dashboard';
-import Staking from './pages/Staking';
-import Admin from './pages/Admin';
-
-const SidebarItem = ({ icon: Icon, label, to, active }) => (
-  <Link to={to} className={`flex items-center gap-4 p-4 rounded-xl transition ${active ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20' : 'text-gray-400 hover:bg-white/5'}`}>
-    <Icon size={20} />
-    <span className="font-bold text-sm uppercase tracking-wider">{label}</span>
-  </Link>
-);
-
-export default function App() {
-  return (
-    <Router>
-      <div className="flex h-screen bg-[#030507] text-white overflow-hidden font-sans">
-        {/* Sidebar */}
-        <aside className="w-64 border-r border-white/5 bg-black/20 backdrop-blur-xl p-6 flex flex-col gap-2">
-          <div className="mb-10 px-4">
-            <h1 className="text-2xl font-black italic tracking-tighter">AI<span className="text-cyan-400">ZON</span></h1>
-          </div>
-          <SidebarItem icon={LayoutGrid} label="Dashboard" to="/" />
-          <SidebarItem icon={Wallet} label="Staking" to="/staking" />
-          <SidebarItem icon={Share2} label="Network" to="/referral" />
-          <SidebarItem icon={Terminal} label="Terminal" to="/terminal" />
-          <div className="mt-auto pt-4 border-t border-white/5">
-             <SidebarItem icon={Shield} label="Admin" to="/admin" />
-             <SidebarItem icon={Settings} label="Settings" to="/settings" />
-          </div>
-        </aside>
-
-        {/* Main View */}
-        <main className="flex-1 overflow-y-auto p-8 relative">
-          <div className="absolute top-0 right-0 p-8 flex gap-4 items-center">
-            <div className="text-right">
-              <p className="text-[10px] text-gray-500 font-bold uppercase">Balance</p>
-              <p className="font-black">₹45,200.00</p>
-            </div>
-            <button className="bg-white text-black px-4 py-2 rounded-lg font-bold text-xs">Connect Wallet</button>
-          </div>
-
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/staking" element={<Staking />} />
-            <Route path="/admin" element={<Admin />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
-  );
-}
-        import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, registerables } from 'chart.js';
-ChartJS.register(...registerables);
-
-export default function Dashboard() {
-  const [prices, setPrices] = useState({});
-
-  useEffect(() => {
-    const fetchPrices = async () => {
-      const res = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=inr');
-      setPrices(res.data);
-    };
-    fetchPrices();
-    const interval = setInterval(fetchPrices, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <header>
-        <h2 className="text-4xl font-black italic">Command Center</h2>
-        <p className="text-gray-500 text-sm">Real-time assets & market analytics.</p>
-      </header>
-
-      <div className="grid grid-cols-3 gap-6">
-        <div className="glass p-8 rounded-3xl bg-white/5 border border-white/10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10"><LayoutGrid size={80}/></div>
-            <p className="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-2">Net Worth</p>
-            <h3 className="text-4xl font-black">₹1,45,000</h3>
+    <!-- 🚀 LOADING SCREEN -->
+    <div id="loader" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center">
+        <div class="relative w-24 h-24 mb-6">
+            <div class="absolute inset-0 border-4 border-cyan-500/20 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-t-cyan-500 rounded-full animate-spin"></div>
         </div>
-        <div className="glass p-8 rounded-3xl bg-white/5 border border-white/10">
-            <p className="text-xs font-bold text-green-400 uppercase tracking-widest mb-2">Total Profit</p>
-            <h3 className="text-4xl font-black">+₹12,400</h3>
-        </div>
-        <div className="glass p-8 rounded-3xl bg-white/5 border border-white/10">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Live BTC</p>
-            <h3 className="text-4xl font-black">₹{prices.bitcoin?.inr.toLocaleString()}</h3>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-8 glass p-8 rounded-[2rem] bg-white/5 border border-white/10 h-96">
-            <h4 className="font-bold mb-4">Portfolio Performance</h4>
-            <Line data={{
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
-                datasets: [{ label: 'Worth', data: [12, 19, 15, 25, 32], borderColor: '#06b6d4', tension: 0.4 }]
-            }} options={{ maintainAspectRatio: false }} />
-        </div>
-        <div className="col-span-4 glass p-8 rounded-[2rem] bg-white/5 border border-white/10">
-            <h4 className="font-bold mb-6 uppercase text-xs tracking-widest text-gray-500">Quick Trade</h4>
-            <div className="space-y-4">
-                <input className="w-full bg-black/40 border border-white/10 p-4 rounded-xl outline-none focus:border-cyan-400" placeholder="Amount INR" />
-                <button className="w-full bg-cyan-500 text-black font-black py-4 rounded-xl hover:scale-[1.02] transition">BUY BTC</button>
-            </div>
-        </div>
-      </div>
+        <h1 class="text-2xl font-black tracking-tighter italic">AI<span class="text-cyan-400">ZON</span></h1>
+        <p class="terminal-text text-[10px] text-gray-500 mt-4 uppercase tracking-[0.3em]">Initializing Kernel v4.2.0...</p>
     </div>
-  );
-}
-            const plans = [
-    { name: 'Alpha Yield', apr: '12%', duration: '30 Days' },
-    { name: 'Sovereign Stake', apr: '24%', duration: '90 Days' },
-    { name: 'Node Master', apr: '48%', duration: '365 Days' },
-];
 
-export default function Staking() {
-    const connectWallet = async () => {
-        if (window.ethereum) {
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            alert("Connected: " + accounts[0]);
-        }
-    };
-
-    return (
-        <div className="space-y-8">
-            <h2 className="text-4xl font-black italic">Liquid Staking</h2>
-            <div className="grid grid-cols-3 gap-6">
-                {plans.map(plan => (
-                    <div className="glass p-10 rounded-[2.5rem] bg-gradient-to-br from-white/10 to-transparent border border-white/10">
-                        <h3 className="text-2xl font-black mb-2">{plan.name}</h3>
-                        <p className="text-cyan-400 font-bold text-4xl mb-6">{plan.apr} <span className="text-xs text-gray-500">APR</span></p>
-                        <ul className="text-xs space-y-2 text-gray-400 mb-8">
-                            <li>• Compound Daily</li>
-                            <li>• Lockup: {plan.duration}</li>
-                        </ul>
-                        <button onClick={connectWallet} className="w-full py-3 rounded-xl border border-white/20 font-bold hover:bg-white hover:text-black transition">STAKE NOW</button>
-                    </div>
-                ))}
+    <!-- 🖥️ DESKTOP ENVIRONMENT -->
+    <div class="h-screen w-screen relative overflow-hidden flex">
+        
+        <!-- SIDEBAR TASKBAR -->
+        <nav class="w-20 glass m-4 rounded-[2rem] flex flex-col items-center py-8 gap-8 z-50">
+            <div class="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/40">
+                <i data-lucide="cpu" class="text-black"></i>
             </div>
-        </div>
-    )
-}    
+            
+            <div class="flex flex-col gap-6 text-gray-500">
+                <button @click="openApp('dash')" :class="activeApp === 'dash' && 'text-cyan-400'"><i data-lucide="layout-grid"></i></button>
+                <button @click="openApp('wallet')" :class="activeApp === 'wallet' && 'text-cyan-400'"><i data-lucide="wallet"></i></button>
+                <button @click="openApp('staking')" :class="activeApp === 'staking' && 'text-cyan-400'"><i data-lucide="bar-chart-3"></i></button>
+                <button @click="openApp('mlm')" :class="activeApp === 'mlm' && 'text-cyan-400'"><i data-lucide="users"></i></button>
+                <button @click="openApp('terminal')" :class="activeApp === 'terminal' && 'text-cyan-400'"><i data-lucide="terminal"></i></button>
+            </div>
+
+            <div class="mt-auto flex flex-col gap-6">
+                <button @click="openApp('admin')" class="text-red-900 hover:text-red-500"><i data-lucide="shield-alert"></i></button>
+                <button @click="logout()"><i data-lucide="log-out"></i></button>
+            </div>
+        </nav>
+
+        <!-- APP CANVAS -->
+        <main class="flex-1 relative p-4">
+            
+            <!-- GLOBAL TOP BAR -->
+            <header class="flex justify-between items-center px-6 py-4 glass rounded-3xl mb-4">
+                <div class="flex items-center gap-4">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">System Status: <span class="text-green-500">Online</span></span>
+                    <div class="h-4 w-px bg-white/10"></div>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Node: <span class="text-cyan-400" x-text="nodeId"></span></span>
+                </div>
+                
+                <div class="flex items-center gap-6">
+                    <div class="text-right">
+                        <p class="text-[9px] font-bold text-gray-500 uppercase">Total INR Balance</p>
+                        <p class="font-black text-lg">₹<span x-text="formatCurrency(user.inrBalance)"></span></p>
+                    </div>
+                    <button @click="connectWeb3()" class="px-5 py-2 rounded-xl bg-white text-black font-bold text-xs hover:bg-cyan-400 transition-all" x-text="web3Address ? shortAddr() : 'Connect Web3'"></button>
+                </div>
+            </header>
+
+            <!-- DYNAMIC APP WINDOWS -->
+            <div class="h-[calc(100vh-140px)] w-full relative">
+                
+                <!-- APP: DASHBOARD -->
+                <section x-show="activeApp === 'dash'" class="app-window h-full overflow-y-auto space-y-6 pr-2">
+                    <div class="grid grid-cols-12 gap-6">
+                        <div class="col-span-8 glass p-10 rounded-[3rem] relative overflow-hidden">
+                            <div class="absolute top-0 right-0 p-10 opacity-5"><i data-lucide="activity" class="w-64 h-64"></i></div>
+                            <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-[0.4em] mb-4">Portfolio Analytics</h2>
+                            <div class="flex items-end gap-4 mb-8">
+                                <h1 class="text-6xl font-black italic">₹<span x-text="formatCurrency(totalValue)"></span></h1>
+                                <span class="text-green-400 font-bold mb-2">+12.5%</span>
+                            </div>
+                            <div class="flex gap-4">
+                                <template x-for="coin in cryptoPrices">
+                                    <div class="px-4 py-2 bg-white/5 border border-white/5 rounded-2xl">
+                                        <p class="text-[10px] text-gray-500 font-bold uppercase" x-text="coin.symbol"></p>
+                                        <p class="font-bold">₹<span x-text="formatCurrency(coin.price)"></span></p>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        
+                        <div class="col-span-4 glass p-8 rounded-[3rem] flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-bold text-sm mb-4 uppercase text-gray-500">Quick Deposit</h3>
+                                <input type="number" x-model="depositAmount" class="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-2xl font-bold mb-4 outline-none focus:border-cyan-500" placeholder="0.00">
+                                <button @click="initPayment()" class="w-full bg-cyan-500 text-black font-black py-4 rounded-2xl shadow-lg shadow-cyan-500/20">DEPOSIT INR</button>
+                            </div>
+                            <p class="text-[10px] text-gray-600 terminal-text mt-4 text-center">SECURED VIA RAZORPAY UPI NODE</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-6">
+                        <div class="glass p-8 rounded-[2.5rem] flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold uppercase">Staked Assets</p>
+                                <p class="text-3xl font-black italic text-cyan-400">₹<span x-text="formatCurrency(user.staked)"></span></p>
+                            </div>
+                            <i data-lucide="lock" class="text-cyan-900"></i>
+                        </div>
+                        <div class="glass p-8 rounded-[2.5rem] border-l-4 border-l-purple-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold uppercase">MLM Network</p>
+                                <p class="text-3xl font-black italic text-purple-400" x-text="user.teamSize"></p>
+                            </div>
+                            <i data-lucide="network" class="text-purple-900"></i>
+                        </div>
+                        <div class="glass p-8 rounded-[2.5rem] border-l-4 border-l-yellow-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold uppercase">ORI Reward</p>
+                                <p class="text-3xl font-black italic text-yellow-400" x-text="user.oriTokens"></p>
+                            </div>
+                            <i data-lucide="gem" class="text-yellow-900"></i>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- APP: STAKING -->
+                <section x-show="activeApp === 'staking'" class="app-window h-full">
+                    <div class="max-w-4xl mx-auto space-y-8 py-10">
+                        <div class="text-center">
+                            <h2 class="text-4xl font-black italic tracking-tighter">FLEXI-STAKE POOLS</h2>
+                            <p class="text-gray-500 mt-2">Earn passive rewards on your idle capital.</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-8">
+                            <div class="glass p-10 rounded-[3rem] text-center border border-white/5 hover:border-cyan-500/50 transition-all">
+                                <span class="bg-cyan-500/10 text-cyan-400 px-4 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">Conservative</span>
+                                <h3 class="text-2xl font-bold mt-4">Sovereign Yield</h3>
+                                <p class="text-5xl font-black my-6 text-white">12% <span class="text-sm text-gray-500 uppercase">APR</span></p>
+                                <button class="w-full py-4 rounded-2xl border border-white/10 font-bold hover:bg-white hover:text-black transition-all">STAKE NOW</button>
+                            </div>
+                            <div class="glass p-10 rounded-[3rem] text-center border border-white/5 hover:border-purple-500/50 transition-all">
+                                <span class="bg-purple-500/10 text-purple-400 px-4 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">Aggressive</span>
+                                <h3 class="text-2xl font-bold mt-4">Node Master</h3>
+                                <p class="text-5xl font-black my-6 text-white">28% <span class="text-sm text-gray-500 uppercase">APR</span></p>
+                                <button class="w-full py-4 rounded-2xl bg-purple-600 font-bold shadow-lg shadow-purple-600/30">STAKE NOW</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- APP: MLM REFERRAL -->
+                <section x-show="activeApp === 'mlm'" class="app-window h-full space-y-8">
+                    <div class="flex justify-between items-end">
+                        <h2 class="text-4xl font-black italic uppercase">Network Node</h2>
+                        <div class="glass px-6 py-4 rounded-2xl flex gap-6 items-center">
+                            <p class="text-xs font-bold text-gray-500 uppercase">Invite Code:</p>
+                            <span class="text-cyan-400 font-black text-xl tracking-tighter" x-text="user.referralCode"></span>
+                            <button class="text-white/40 hover:text-white"><i data-lucide="copy" class="w-4"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-4 gap-6">
+                        <template x-for="stat in mlmStats">
+                            <div class="glass p-8 rounded-3xl text-center">
+                                <p class="text-[10px] font-black text-gray-500 uppercase mb-2" x-text="stat.label"></p>
+                                <p class="text-3xl font-black" x-text="stat.value"></p>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="glass rounded-[3rem] overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-white/5 text-[10px] font-black text-gray-500 uppercase">
+                                <tr>
+                                    <th class="p-6">User ID</th>
+                                    <th class="p-6">Tier</th>
+                                    <th class="p-6">Staked</th>
+                                    <th class="p-6">Earning</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm">
+                                <template x-for="i in 5">
+                                    <tr class="border-b border-white/5">
+                                        <td class="p-6 font-bold text-cyan-400">AIZ-NODE-402<span x-text="i"></span></td>
+                                        <td class="p-6"><span class="px-2 py-1 bg-green-500/10 text-green-500 text-[10px] rounded">Active</span></td>
+                                        <td class="p-6">₹45,000</td>
+                                        <td class="p-6 font-black">₹450</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- APP: TERMINAL -->
+                <section x-show="activeApp === 'terminal'" class="app-window h-full bg-black/60 rounded-[2rem] p-8 border border-white/5 terminal-text flex flex-col">
+                    <div class="flex-1 overflow-y-auto mb-4 text-xs space-y-2 text-cyan-400/80">
+                        <div>[AIZON-OS] Kernel v4.2.0 Loaded.</div>
+                        <div>Type 'help' to see available commands.</div>
+                        <template x-for="log in terminalLogs">
+                            <div class="flex gap-4">
+                                <span class="text-white/20" x-text="log.time"></span>
+                                <span x-text="log.content" class="text-white"></span>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="flex gap-3 items-center bg-white/5 p-4 rounded-xl border border-white/5">
+                        <span class="text-cyan-500 font-bold">root@aizon:~$</span>
+                        <input type="text" x-model="terminalInput" @keyup.enter="handleTerminal()" class="flex-1 bg-transparent outline-none text-white font-bold" autofocus>
+                    </div>
+                </section>
+
+                <!-- APP: ADMIN PANEL -->
+                <section x-show="activeApp === 'admin'" class="app-window h-full space-y-6">
+                    <h2 class="text-4xl font-black text-red-500 italic">SYSTEM COMMAND</h2>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="glass p-8 rounded-3xl">
+                            <h4 class="font-bold mb-4 text-xs uppercase text-gray-500 tracking-widest">Pending Withdrawals</h4>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <div>
+                                        <p class="font-bold text-sm">₹85,000.00</p>
+                                        <p class="text-[10px] text-gray-500">ID: TX-9921-X</p>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button class="px-4 py-1 bg-green-600 rounded text-[10px] font-bold">APPROVE</button>
+                                        <button class="px-4 py-1 bg-red-600 rounded text-[10px] font-bold">REJECT</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="glass p-8 rounded-3xl">
+                            <h4 class="font-bold mb-4 text-xs uppercase text-gray-500 tracking-widest">Global Analytics</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="p-4 bg-white/5 rounded-2xl">
+                                    <p class="text-[10px] text-gray-500 font-bold">TOTAL TVL</p>
+                                    <p class="text-xl font-black">₹1.4 Cr</p>
+                                </div>
+                                <div class="p-4 bg-white/5 rounded-2xl">
+                                    <p class="text-[10px] text-gray-500 font-bold">NEW USERS</p>
+                                    <p class="text-xl font-black">124</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- 🧠 SYSTEM LOGIC -->
+    <script>
+        function aizonOS() {
+            return {
+                activeApp: 'dash',
+                nodeId: 'MUM-0x' + Math.floor(Math.random() * 9999),
+                web3Address: '',
+                depositAmount: '',
+                totalValue: 1450000,
+                terminalInput: '',
+                terminalLogs: [],
+                user: {
+                    inrBalance: 125000,
+                    staked: 85000,
+                    oriTokens: 1205,
+                    teamSize: 42,
+                    referralCode: 'AIZ-24-QRX'
+                },
+                cryptoPrices: [
+                    { symbol: 'BTC', price: 5842000 },
+                    { symbol: 'ETH', price: 215000 },
+                    { symbol: 'SOL', price: 12500 }
+                ],
+                mlmStats: [
+                    { label: 'Team Size', value: '42' },
+                    { label: 'Direct Referrals', value: '12' },
+                    { label: 'Level 1 Income', value: '₹12,400' },
+                    { label: 'Global Bonus', value: '₹5,000' }
+                ],
+
+                boot() {
+                    setTimeout(() => {
+                        gsap.to("#loader", { opacity: 0, pointerEvents: 'none', duration: 1 });
+                        lucide.createIcons();
+                    }, 2000);
+                    
+                    // Real-time Price Simulation
+                    setInterval(() => {
+                        this.cryptoPrices.forEach(c => c.price += (Math.random() - 0.5) * 1000);
+                        this.totalValue = this.user.inrBalance + this.user.staked;
+                    }, 3000);
+                },
+
+                openApp(app) {
+                    this.activeApp = app;
+                    this.$nextTick(() => lucide.createIcons());
+                },
+
+                formatCurrency(val) {
+                    return new Intl.NumberFormat('en-IN').format(Math.floor(val));
+                },
+
+                async connectWeb3() {
+                    if (window.ethereum) {
+                        const provider = new ethers.BrowserProvider(window.ethereum);
+                        const accounts = await provider.send("eth_requestAccounts", []);
+                        this.web3Address = accounts[0];
+                        this.addLog(`Wallet linked: ${this.shortAddr()}`);
+                    } else {
+                        alert("Please install MetaMask");
+                    }
+                },
+
+                shortAddr() {
+                    return this.web3Address.slice(0, 6) + '...' + this.web3Address.slice(-4);
+                },
+
+                initPayment() {
+                    if (!this.depositAmount) return alert("Enter amount");
+                    
+                    const options = {
+                        key: "rzp_test_YOUR_KEY", // Production key goes here
+                        amount: this.depositAmount * 100,
+                        currency: "INR",
+                        name: "AIZON OS",
+                        description: "Wallet Refill",
+                        handler: (res) => {
+                            this.user.inrBalance += parseInt(this.depositAmount);
+                            this.addLog(`Financial Node Updated: +₹${this.depositAmount}`);
+                            alert("Payment Successful: " + res.razorpay_payment_id);
+                        }
+                    };
+                    const rzp = new Razorpay(options);
+                    rzp.open();
+                },
+
+                handleTerminal() {
+                    const cmd = this.terminalInput.toLowerCase();
+                    const time = new Date().toLocaleTimeString();
+                    
+                    let response = "";
+                    if (cmd === 'help') response = "Available: help, price, balance, clear, sudo";
+                    else if (cmd === 'price') response = `BTC: ₹${this.formatCurrency(this.cryptoPrices[0].price)}`;
+                    else if (cmd === 'balance') response = `Account: ₹${this.formatCurrency(this.user.inrBalance)}`;
+                    else response = `Command not found: ${cmd}`;
+
+                    this.terminalLogs.push({ time, content: `> ${cmd}` });
+                    this.terminalLogs.push({ time, content: response });
+                    this.terminalInput = '';
+                },
+
+                addLog(content) {
+                    this.terminalLogs.push({ 
+                        time: new Date().toLocaleTimeString(), 
+                        content: `[SYSTEM] ${content}` 
+                    });
+                },
+
+                logout() {
+                    if (confirm("Terminate Session?")) window.location.reload();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
