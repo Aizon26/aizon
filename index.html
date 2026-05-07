@@ -1,296 +1,226 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CryptoPilot | Titan Apex Terminal</title>
+    <title>ORIZON | APEX-ZERO</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Plus+Jakarta+Sans:wght@200;400;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;800&family=Fira+Code:wght@300;500&display=swap');
         
-        :root { --neon: #00f2ff; --bg: #010409; --panel: rgba(13, 17, 23, 0.8); }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: #e6edf3; overflow-x: hidden; }
-        
-        /* High-Tech Background Mesh */
-        .mesh-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: 
-                radial-gradient(circle at 20% 30%, rgba(0, 242, 255, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
-            z-index: -1;
+        :root {
+            --neon-cyan: #00f2ff;
+            --deep-space: #010409;
         }
 
-        .grid-overlay {
-            position: fixed; inset: 0;
-            background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-            background-size: 50px 50px; z-index: -1;
+        body {
+            background-color: var(--deep-space);
+            color: #ffffff;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+            height: 100vh;
         }
 
-        /* Orizon Typography */
-        .h-mega { font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.05em; line-height: 0.9; }
-        .text-glow { text-shadow: 0 0 20px rgba(0, 242, 255, 0.5); }
-        
-        /* Glass Components */
-        .apex-card { background: var(--panel); backdrop-filter: blur(30px); border: 1px solid rgba(255,255,255,0.05); border-radius: 2rem; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .apex-card:hover { border-color: var(--neon); box-shadow: 0 0 40px rgba(0, 242, 255, 0.1); transform: translateY(-5px); }
+        .glass-terminal {
+            background: rgba(13, 17, 23, 0.7);
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
 
-        /* Animations */
-        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
-        .scanner::after { content: ''; position: absolute; width: 100%; height: 2px; background: var(--neon); top: 0; left: 0; box-shadow: 0 0 15px var(--neon); animation: scan 3s linear infinite; }
-        
-        [x-cloak] { display: none !important; }
+        #hyper-canvas { position: fixed; inset: 0; z-index: -1; }
+
+        /* Custom Scrollbar for Terminal Logs */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
     </style>
 </head>
-<body x-data="titanOS()" x-init="init()">
+<body x-data="apexCore()" x-init="initializeSystem()">
 
-    <div class="mesh-bg"></div>
-    <div class="grid-overlay"></div>
+    <canvas id="hyper-canvas"></canvas>
 
-    <!-- PHASE 1: ORIZON LANDING -->
+    <!-- AUTH GATE -->
     <template x-if="!isAuthorized">
-        <div class="min-h-screen flex flex-col items-center justify-center relative px-6 overflow-hidden">
-            <!-- Decorative Elements -->
-            <div class="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-cyan-500/10 rounded-full blur-[120px] -z-10"></div>
-            
-            <nav class="absolute top-0 w-full p-8 flex justify-between items-center max-w-7xl">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-cyan-400 rounded-full shadow-[0_0_15px_#00f2ff]"></div>
-                    <span class="font-bold tracking-tighter text-xl italic">TITAN.ORIZON</span>
-                </div>
-                <div class="hidden md:flex gap-8 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    <a href="#" class="hover:text-cyan-400">Neural Net</a>
-                    <a href="#" class="hover:text-cyan-400">Liquidity</a>
-                    <a href="#" class="hover:text-cyan-400">Nodes</a>
-                </div>
-                <button @click="triggerAuth()" class="px-6 py-2 border border-cyan-400/30 text-cyan-400 text-xs font-bold rounded-full hover:bg-cyan-400 hover:text-black transition-all">Launch Console</button>
-            </nav>
-
-            <div class="text-center space-y-8 mt-12">
-                <p class="text-cyan-400 text-xs font-bold tracking-[0.5em] uppercase">Ecosystem V3.0 — 2026 Protocol</p>
-                <h1 class="h-mega text-7xl md:text-[10rem] text-white">ORBITAL <br><span class="text-glow">WEALTH.</span></h1>
-                <p class="text-gray-500 text-sm md:text-base max-w-xl mx-auto font-light leading-relaxed">
-                    Capture the next wave of decentralization. An AI-managed multi-chain gateway for India's elite digital pilots. 
-                </p>
-                
-                <div class="relative group max-w-md mx-auto">
-                    <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                    <div class="relative flex bg-black rounded-2xl border border-white/10 p-2">
-                        <input type="text" placeholder="Enter Pilot ID / Email" class="bg-transparent flex-1 px-4 text-sm focus:outline-none">
-                        <button @click="triggerAuth()" class="bg-cyan-400 text-black px-6 py-3 rounded-xl font-bold text-sm">Join Orbit</button>
-                    </div>
-                </div>
+        <div class="sovereign-vault fixed inset-0 flex flex-col items-center justify-center p-10 bg-black z-[1000]">
+            <div class="text-center mb-12">
+                <h1 class="text-8xl font-black tracking-tighter uppercase mb-2">Apex<span class="text-cyan-400">Zero</span></h1>
+                <p class="text-[10px] tracking-[1em] text-gray-500">SECURE SOVEREIGN ACCESS</p>
             </div>
 
-            <!-- Floating Metrics -->
-            <div class="mt-20 flex flex-wrap justify-center gap-10 opacity-40">
-                <div class="text-center"><p class="text-2xl font-bold">₹1.2T</p><p class="text-[9px] uppercase font-bold text-cyan-400">TVL Locked</p></div>
-                <div class="text-center"><p class="text-2xl font-bold">4.2ms</p><p class="text-[9px] uppercase font-bold text-cyan-400">Finality</p></div>
-                <div class="text-center"><p class="text-2xl font-bold">0.0%</p><p class="text-[9px] uppercase font-bold text-cyan-400">Slippage</p></div>
+            <div class="grid grid-cols-2 gap-4 w-full max-w-md">
+                <button @click="connectWallet('MetaMask')" class="glass-terminal p-6 rounded-2xl hover:border-cyan-400 transition flex flex-col items-center">
+                    <i data-lucide="wallet" class="mb-2"></i>
+                    <span class="text-[10px] font-bold">METAMASK</span>
+                </button>
+                <button @click="connectWallet('Google')" class="glass-terminal p-6 rounded-2xl hover:border-white transition flex flex-col items-center">
+                    <i data-lucide="log-in" class="mb-2"></i>
+                    <span class="text-[10px] font-bold">GOOGLE SSO</span>
+                </button>
             </div>
         </div>
     </template>
 
-    <!-- AUTHENTICATION SCANNER MODAL -->
-    <div x-show="isScanning" x-cloak class="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl">
-        <div class="text-center space-y-6">
-            <div class="w-48 h-48 border-2 border-cyan-400/20 rounded-3xl relative overflow-hidden scanner mx-auto">
-                <i data-lucide="user" class="w-full h-full p-12 text-cyan-400/30"></i>
+    <!-- OS INTERFACE -->
+    <div x-show="isAuthorized" x-cloak class="flex h-screen w-full">
+        
+        <!-- SIDEBAR -->
+        <aside class="w-20 border-r border-white/5 flex flex-col items-center py-8 bg-black/20">
+            <div class="w-12 h-12 bg-cyan-500 rounded-xl flex items-center justify-center text-black mb-12 shadow-lg shadow-cyan-500/20">
+                <i data-lucide="zap"></i>
             </div>
-            <p class="text-cyan-400 font-mono text-xs animate-pulse">BIOMETRIC HANDSHAKE IN PROGRESS...</p>
-        </div>
-    </div>
+            <nav class="flex flex-col gap-8 text-gray-500">
+                <i data-lucide="layout-grid" class="cursor-pointer hover:text-cyan-400"></i>
+                <i data-lucide="activity" class="cursor-pointer hover:text-cyan-400"></i>
+                <i data-lucide="shield" class="cursor-pointer hover:text-cyan-400"></i>
+            </nav>
+        </aside>
 
-    <!-- PHASE 2: HIGH-TECH TERMINAL -->
-    <template x-if="isAuthorized">
-        <div x-transition.opacity.duration.1000ms class="p-4 lg:p-8">
-            
-            <!-- TERMINAL HEADER -->
-            <header class="flex justify-between items-center mb-8 glass p-4 rounded-3xl border border-white/5">
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 bg-cyan-400 text-black rounded-xl flex items-center justify-center shadow-lg"><i data-lucide="layers"></i></div>
-                    <div>
-                        <h2 class="text-sm font-bold">TITAN APEX <span class="text-cyan-400">TERMINAL</span></h2>
-                        <p class="text-[9px] text-gray-500 font-mono" x-text="'SID: ' + sessionId"></p>
-                    </div>
+        <!-- MAIN -->
+        <div class="flex-1 flex flex-col min-w-0">
+            <header class="h-20 border-b border-white/5 flex items-center justify-between px-10">
+                <div class="flex items-center gap-6">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Node: Mumbai_26</span>
+                    <div class="h-4 w-px bg-white/10"></div>
+                    <span class="text-xs font-mono text-cyan-400" x-text="activeWallet"></span>
                 </div>
-
-                <div class="flex gap-4 items-center">
-                    <div class="bg-black border border-white/5 px-4 py-2 rounded-xl flex items-center gap-3">
-                        <div class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></div>
-                        <span class="text-[10px] font-bold text-gray-400">MULTI-CHAIN SYNC: ON</span>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <p class="text-[9px] text-gray-500 uppercase font-bold">Total Liquidity</p>
+                        <p class="text-xl font-black">₹<span x-text="format(totalWorth)"></span></p>
                     </div>
-                    <button class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition"><i data-lucide="bell" class="w-4 h-4"></i></button>
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 border-2 border-white/20"></div>
                 </div>
             </header>
 
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                <!-- LEFT PANEL: MARKET INTELLIGENCE -->
-                <aside class="lg:col-span-3 space-y-6">
-                    <div class="apex-card p-6 border-l-4 border-cyan-400">
-                        <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">AI Risk Monitor</h3>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-end">
-                                <span class="text-xs text-gray-400">Network Threat Level</span>
-                                <span class="text-xs text-green-400 font-bold">LOW (0.02%)</span>
-                            </div>
-                            <div class="h-1 bg-white/5 rounded-full overflow-hidden">
-                                <div class="h-full bg-cyan-400 w-[12%]"></div>
-                            </div>
-                            <p class="text-[9px] text-gray-500 leading-tight">Neural engine has validated all smart contracts for ORI and WBNB liquidity pools.</p>
-                        </div>
-                    </div>
-
-                    <div class="apex-card p-6">
-                        <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">India Compliance Hub</h3>
-                        <div class="p-3 bg-white/5 rounded-xl border border-white/10">
-                            <div class="flex justify-between text-xs mb-2">
-                                <span>Est. VDA Tax</span>
-                                <span class="text-red-400">₹42,500.00</span>
-                            </div>
-                            <button class="w-full py-2 bg-white/5 hover:bg-white/10 rounded-lg text-[10px] font-bold transition">DOWNLOAD TAX REPORT (FY26-27)</button>
-                        </div>
-                    </div>
-                </aside>
-
-                <!-- CENTER PANEL: MASTER LEDGER -->
-                <main class="lg:col-span-6 space-y-6">
-                    <!-- Dynamic Balance View -->
-                    <div class="apex-card p-8 bg-gradient-to-br from-blue-950/40 to-black relative overflow-hidden group">
-                        <div class="relative z-10 flex justify-between items-start">
+            <main class="flex-1 p-8 grid grid-cols-12 gap-6 overflow-hidden">
+                <!-- TAX CALCULATOR PANEL -->
+                <div class="col-span-8 space-y-6 overflow-y-auto pr-2 custom-scroll">
+                    <section class="glass-terminal rounded-[3rem] p-10 border-t border-cyan-400/20">
+                        <h2 class="text-[10px] font-black text-cyan-400 tracking-widest uppercase mb-6">Real-Time Yield Ledger</h2>
+                        <div class="grid grid-cols-2 gap-10">
                             <div>
-                                <p class="text-cyan-400 text-[10px] font-bold uppercase tracking-widest mb-2">Aggregate Value (INR)</p>
-                                <h1 class="text-5xl font-black tracking-tighter" x-text="'₹' + formatINR(totalPortfolio)"></h1>
-                                <div class="mt-4 flex items-center gap-2 text-xs font-bold text-green-400">
-                                    <i data-lucide="trending-up" class="w-3 h-3"></i> +14.2% (24H)
+                                <p class="text-5xl font-black italic">₹<span x-text="format(yieldMonthly)"></span></p>
+                                <p class="text-[9px] text-gray-500 mt-2 uppercase tracking-widest">Gross Monthly Yield</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="p-4 bg-white/5 rounded-2xl">
+                                    <p class="text-[8px] text-red-400 font-bold uppercase">VDA Tax (30%)</p>
+                                    <p class="font-bold">₹<span x-text="format(yieldMonthly * 0.3)"></span></p>
+                                </div>
+                                <div class="p-4 bg-green-400/10 rounded-2xl border border-green-400/20">
+                                    <p class="text-[8px] text-green-400 font-bold uppercase">Net Profit</p>
+                                    <p class="font-bold text-green-400">₹<span x-text="format(yieldMonthly * 0.688)"></span></p>
                                 </div>
                             </div>
-                            <div class="flex gap-2">
-                                <button class="p-3 rounded-2xl bg-cyan-400 text-black hover:scale-110 transition"><i data-lucide="plus"></i></button>
-                                <button class="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition"><i data-lucide="arrow-right"></i></button>
-                            </div>
                         </div>
-                        <div class="mt-10 h-32 flex items-end gap-1">
-                            <template x-for="i in 20">
-                                <div class="flex-1 bg-cyan-500/20 rounded-t-sm hover:bg-cyan-400 transition-all cursor-pointer" :style="`height: ${Math.random() * 100}%`" ></div>
+                    </section>
+
+                    <!-- ASSETS -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <template x-for="asset in assets" :key="asset.symbol">
+                            <div class="glass-terminal p-6 rounded-3xl flex justify-between items-center">
+                                <div>
+                                    <p class="text-sm font-black" x-text="asset.name"></p>
+                                    <p class="text-[9px] text-gray-500" x-text="asset.symbol"></p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold">₹<span x-text="format(asset.price * asset.balance)"></span></p>
+                                    <p class="text-[9px] text-cyan-400" x-text="asset.balance"></p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- TERMINAL -->
+                <div class="col-span-4 flex flex-col gap-6">
+                    <div class="glass-terminal flex-1 rounded-3xl p-6 flex flex-col font-mono text-[10px] overflow-hidden">
+                        <div class="flex-1 overflow-y-auto space-y-2 mb-4 custom-scroll" id="log-container">
+                            <template x-for="log in sysLogs" :key="log.id">
+                                <div><span class="text-cyan-400">>></span> <span x-text="log.text"></span></div>
                             </template>
                         </div>
+                        <input type="text" x-model="commandInput" @keyup.enter="execCommand" placeholder="COMMAND_INPUT..." class="bg-white/5 p-3 rounded-xl border-none outline-none focus:ring-1 ring-cyan-400/50">
                     </div>
-
-                    <!-- Asset Grid -->
-                    <div class="apex-card p-8">
-                        <div class="flex justify-between items-center mb-6">
-                            <h4 class="text-xs font-bold uppercase tracking-widest text-gray-400">Vaulted Assets</h4>
-                            <div class="flex gap-4 text-[10px] font-bold">
-                                <span class="text-cyan-400">TOKENS</span>
-                                <span class="text-gray-600">LP POOLS</span>
-                            </div>
-                        </div>
-
-                        <div class="space-y-4">
-                            <template x-for="asset in assets" :key="asset.symbol">
-                                <div class="p-4 flex items-center justify-between hover:bg-white/5 rounded-2xl transition-all border border-transparent hover:border-white/5">
-                                    <div class="flex items-center gap-4">
-                                        <div :class="asset.color" class="w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-black" x-text="asset.symbol[0]"></div>
-                                        <div>
-                                            <p class="font-bold text-sm" x-text="asset.name"></p>
-                                            <p class="text-[9px] font-bold text-gray-500" x-text="asset.network"></p>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="font-bold text-sm" x-text="'₹' + formatINR(asset.price)"></p>
-                                        <p class="text-[10px] font-bold text-cyan-400" x-text="asset.balance + ' ' + asset.symbol"></p>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </main>
-
-                <!-- RIGHT PANEL: TRADE & ECOSYSTEM -->
-                <aside class="lg:col-span-3 space-y-6">
-                    <div class="apex-card p-6">
-                        <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6">Quantum Swap</h3>
-                        <div class="space-y-4">
-                            <div class="bg-black/40 p-4 rounded-2xl border border-white/5">
-                                <p class="text-[9px] text-gray-500 font-bold mb-2">PAY</p>
-                                <div class="flex justify-between items-center">
-                                    <input type="number" value="1.0" class="bg-transparent text-xl font-bold w-1/2 focus:outline-none">
-                                    <span class="text-sm font-bold text-cyan-400">WBNB</span>
-                                </div>
-                            </div>
-                            <div class="flex justify-center -my-3 relative z-10">
-                                <button class="w-8 h-8 bg-cyan-400 text-black rounded-full flex items-center justify-center shadow-lg"><i data-lucide="arrow-down-up" class="w-4 h-4"></i></button>
-                            </div>
-                            <div class="bg-black/40 p-4 rounded-2xl border border-white/5">
-                                <p class="text-[9px] text-gray-500 font-bold mb-2">RECEIVE (EST.)</p>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-xl font-bold text-gray-400">42.50</span>
-                                    <span class="text-sm font-bold text-cyan-400">ORI</span>
-                                </div>
-                            </div>
-                            <button class="w-full py-4 bg-cyan-400 text-black font-extrabold rounded-2xl text-xs hover:shadow-[0_0_20px_#00f2ff] transition">EXECUTE SMART SWAP</button>
-                        </div>
-                    </div>
-
-                    <div class="apex-card p-6 bg-cyan-400/5 border-dashed">
-                        <div class="flex items-center gap-2 mb-4 text-cyan-400">
-                            <i data-lucide="users" class="w-4 h-4"></i>
-                            <h3 class="text-[10px] font-bold uppercase tracking-widest">Pilot Squad</h3>
-                        </div>
-                        <p class="text-[11px] text-gray-400 mb-4 font-medium">Your node is currently securing 4 downstream pilots. Tier: <span class="text-white">Diamond</span></p>
-                        <div class="flex -space-x-2">
-                            <div class="w-8 h-8 rounded-full border-2 border-black bg-indigo-500"></div>
-                            <div class="w-8 h-8 rounded-full border-2 border-black bg-pink-500"></div>
-                            <div class="w-8 h-8 rounded-full border-2 border-black bg-emerald-500"></div>
-                            <div class="w-8 h-8 rounded-full border-2 border-black bg-gray-800 flex items-center justify-center text-[10px] font-bold">+12</div>
-                        </div>
-                    </div>
-                </aside>
-
-            </div>
+                </div>
+            </main>
         </div>
-    </template>
+    </div>
 
     <script>
-        lucide.createIcons();
-
-        function titanOS() {
+        function apexCore() {
             return {
                 isAuthorized: false,
-                isScanning: false,
-                sessionId: 'PILOT-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-                totalPortfolio: 28450000.00,
+                activeWallet: 'DISCONNECTED',
+                commandInput: '',
+                yieldMonthly: 124500.00,
+                sysLogs: [],
                 assets: [
-                    { name: 'Orizon Protocol', symbol: 'ORI', price: 1240.50, balance: '12,400', network: 'TITAN-NET', color: 'bg-cyan-500/20 text-cyan-400' },
-                    { name: 'Tether USD', symbol: 'USDT', price: 87.42, balance: '5,000', network: 'TRC-20', color: 'bg-green-500/20 text-green-400' },
-                    { name: 'USD Coin', symbol: 'USDC', price: 87.45, balance: '25,000', network: 'ERC-20', color: 'bg-blue-500/20 text-blue-400' },
-                    { name: 'Wrapped BNB', symbol: 'WBNB', price: 54200.00, balance: '42.50', network: 'BEP-20', color: 'bg-yellow-500/20 text-yellow-500' }
+                    { name: 'Orizon DeFAI', symbol: 'ORI', price: 5408, balance: 485, network: 'L1' },
+                    { name: 'Tether', symbol: 'USDT', price: 87.4, balance: 12000, network: 'TRC20' }
                 ],
 
-                init() {
-                    // Start Live Engine
-                    setInterval(() => {
-                        if(this.isAuthorized) {
-                            this.totalPortfolio += (Math.random() - 0.45) * 1000;
-                        }
-                    }, 2000);
+                get totalWorth() {
+                    return this.assets.reduce((sum, a) => sum + (a.price * a.balance), 0);
                 },
 
-                triggerAuth() {
-                    this.isScanning = true;
+                initializeSystem() {
+                    this.addLog("System Kernal 4.0.26 Loaded.");
+                    this.init3D();
+                    lucide.createIcons();
+                },
+
+                async connectWallet(type) {
+                    this.addLog(`Initiating handshake with ${type}...`);
+                    // Artificial Delay for effect
                     setTimeout(() => {
-                        this.isScanning = false;
                         this.isAuthorized = true;
+                        this.activeWallet = type === 'Google' ? 'auth.sovereign.user' : '0x71C...890';
+                        this.addLog("Auth Success. Welcome back, Admin.");
                         setTimeout(() => lucide.createIcons(), 100);
-                    }, 2500);
+                    }, 1000);
                 },
 
-                formatINR(v) {
-                    return v.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                execCommand() {
+                    let cmd = this.commandInput.toLowerCase();
+                    this.addLog(`EXEC: ${cmd}`);
+                    
+                    if(cmd === 'clear') this.sysLogs = [];
+                    if(cmd === 'help') this.addLog("Available: CLEAR, STATUS, REBOOT, SYNC");
+                    
+                    this.commandInput = '';
+                },
+
+                addLog(text) {
+                    this.sysLogs.push({ id: Date.now(), text });
+                    this.$nextTick(() => {
+                        const container = document.getElementById('log-container');
+                        container.scrollTop = container.scrollHeight;
+                    });
+                },
+
+                format(n) { return n.toLocaleString('en-IN'); },
+
+                init3D() {
+                    const scene = new THREE.Scene();
+                    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+                    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('hyper-canvas'), alpha: true });
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    const geometry = new THREE.IcosahedronGeometry(15, 1);
+                    const material = new THREE.MeshBasicMaterial({ color: 0x00f2ff, wireframe: true, transparent: true, opacity: 0.05 });
+                    const sphere = new THREE.Mesh(geometry, material);
+                    scene.add(sphere);
+                    camera.position.z = 40;
+                    const animate = () => {
+                        requestAnimationFrame(animate);
+                        sphere.rotation.y += 0.002;
+                        renderer.render(scene, camera);
+                    };
+                    animate();
                 }
             }
         }
