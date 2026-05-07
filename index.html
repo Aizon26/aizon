@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Aizon — India's Web3 Intelligence Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════
+   ROOT VARIABLES & RESET
+═══════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --cyan: #00e5ff;
+  --blue: #1a6fff;
+  --purple: #7c3aed;
+  --pink: #ff0080;
+  --green: #00ff88;
+  --gold: #ffd700;
+  --orange: #ff6a00;
+  --red: #ff3366;
+  --bg: #020810;
+  --bg2: #040c18;
+  --bg3: #060f20;
+  --surface: rgba(10,20,40,0.8);
+  --surface2: rgba(15,30,60,0.6);
+  --border: rgba(0,229,255,0.12);
+  --border2: rgba(0,229,255,0.25);
+  --text: #e0f0ff;
+  --muted: #4a6080;
+  --font-d: 'Orbitron', sans-serif;
+  --font-b: 'Rajdhani', sans-serif;
+  --font-m: 'Share Tech Mono', monospace;
+}
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-b);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+
+/* ═══════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════ */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 2px; }
+
+/* ═══════════════════════════════════════
+   BACKGROUND EFFECTS
+═══════════════════════════════════════ */
+.bg-grid {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+.orb {
+  position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+  animation: orbFloat 8s ease-in-out infinite;
+}
+.orb1 { width:600px; height:600px; top:-200px; left:-200px; background:radial-gradient(circle, rgba(0,229,255,0.06) 0%, transparent 70%); }
+.orb2 { width:500px; height:500px; bottom:-150px; right:-150px; background:radial-gradient(circle, rgba(26,111,255,0.08) 0%, transparent 70%); animation-delay:-4s; }
+.orb3 { width:300px; height:300px; top:40%; left:50%; background:radial-gradient(circle, rgba(124,58,237,0.05) 0%, transparent 70%); animation-delay:-2s; }
+@keyframes orbFloat { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-20px)} }
+
+/* ═══════════════════════════════════════
+   PAGE SYSTEM
+═══════════════════════════════════════ */
+.page { display: none; min-height: 100vh; position: relative; z-index: 1; }
+.page.active { display: block; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+/* ═══════════════════════════════════════
+   SIDEBAR NAV
+═══════════════════════════════════════ */
+.app-layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  background: rgba(4,12,24,0.95);
+  border-right: 1px solid var(--border);
+  position: fixed; left: 0; top: 0; bottom: 0; z-index: 100;
+  display: flex; flex-direction: column;
+  backdrop-filter: blur(20px);
+  transform: translateX(-100%);
+  transition: transform 0.3s;
+}
+.sidebar.open { transform: translateX(0); }
+.sidebar-logo {
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-text {
+  font-family: var(--font-d);
+  font-size: 1.5rem;
+  font-weight: 900;
+  background: linear-gradient(90deg, var(--cyan), var(--blue));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: 2px;
+}
+.logo-sub { font-size: 0.65rem; color: var(--muted); letter-spacing: 3px; font-family: var(--font-m); margin-top: 2px; }
+.sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+.nav-section { margin-bottom: 8px; }
+.nav-label { font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); padding: 8px 8px 4px; font-family: var(--font-m); }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  font-size: 0.9rem; font-weight: 600;
+  color: var(--muted);
+  transition: all 0.2s; margin-bottom: 2px;
+  cursor: pointer;
+}
+.nav-item:hover { color: var(--cyan); background: rgba(0,229,255,0.06); }
+.nav-item.active { color: var(--cyan); background: rgba(0,229,255,0.1); border-left: 2px solid var(--cyan); }
+.nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+.sidebar-footer {
+  padding: 16px; border-top: 1px solid var(--border);
+}
+.sidebar-user {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px; border-radius: 10px;
+  background: var(--surface2); cursor: pointer;
+}
+.user-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; color: #000;
+  flex-shrink: 0;
+}
+.user-name { font-size: 0.85rem; font-weight: 600; }
+.user-email { font-size: 0.65rem; color: var(--muted); font-family: var(--font-m); }
+
+/* TOPBAR */
+.topbar {
+  height: 60px;
+  background: rgba(4,12,24,0.95);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; position: sticky; top: 0; z-index: 99;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.menu-btn {
+  background: none; border: 1px solid var(--border); color: var(--cyan);
+  padding: 6px 10px; border-radius: 8px; font-size: 1.1rem;
+  transition: all 0.2s;
+}
+.menu-btn:hover { background: rgba(0,229,255,0.1); }
+.page-title { font-family: var(--font-d); font-size: 0.85rem; font-weight: 700; letter-spacing: 2px; color: var(--cyan); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.ticker-strip {
+  display: flex; gap: 16px; overflow: hidden;
+  font-family: var(--font-m); font-size: 0.7rem;
+  flex: 1; max-width: 400px;
+}
+.ticker-item { white-space: nowrap; display: flex; gap: 6px; }
+.ticker-up { color: var(--green); }
+.ticker-down { color: var(--red); }
+
+/* ═══════════════════════════════════════
+   MAIN CONTENT AREA
+═══════════════════════════════════════ */
+.main-content {
+  flex: 1; padding: 24px;
+  max-width: 1400px; margin: 0 auto; width: 100%;
+}
+
+/* ═══════════════════════════════════════
+   GLASSMORPHISM CARDS
+═══════════════════════════════════════ */
+.glass {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+}
+.glass-bright {
+  background: rgba(0,229,255,0.05);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+}
+.card { padding: 20px; }
+.card-sm { padding: 14px 16px; }
+
+/* ═══════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 22px; border-radius: 10px; border: none;
+  font-family: var(--font-d); font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  transition: all 0.25s; cursor: pointer;
+}
+.btn-cyan {
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  color: #000; box-shadow: 0 0 20px rgba(0,229,255,0.3);
+}
+.btn-cyan:hover { box-shadow: 0 0 35px rgba(0,229,255,0.55); transform: translateY(-1px); }
+.btn-outline {
+  background: transparent; color: var(--cyan);
+  border: 1px solid var(--cyan);
+}
+.btn-outline:hover { background: rgba(0,229,255,0.1); }
+.btn-ghost {
+  background: rgba(255,255,255,0.05); color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.1); }
+.btn-green {
+  background: linear-gradient(135deg, var(--green), #00cc66);
+  color: #000; box-shadow: 0 0 20px rgba(0,255,136,0.3);
+}
+.btn-red {
+  background: linear-gradient(135deg, var(--red), #cc0033);
+  color: #fff; box-shadow: 0 0 20px rgba(255,51,102,0.3);
+}
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold), var(--orange));
+  color: #000; box-shadow: 0 0 20px rgba(255,215,0,0.3);
+}
+.btn-lg { padding: 14px 32px; font-size: 0.85rem; }
+.btn-sm { padding: 7px 14px; font-size: 0.65rem; }
+
+/* ═══════════════════════════════════════
+   BADGES & TAGS
+═══════════════════════════════════════ */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 100px;
+  font-size: 0.65rem; font-family: var(--font-m); font-weight: 700;
+}
+.badge-green { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.25); }
+.badge-red { background: rgba(255,51,102,0.1); color: var(--red); border: 1px solid rgba(255,51,102,0.25); }
+.badge-cyan { background: rgba(0,229,255,0.1); color: var(--cyan); border: 1px solid rgba(0,229,255,0.25); }
+.badge-gold { background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid rgba(255,215,0,0.25); }
+.badge-purple { background: rgba(124,58,237,0.1); color: #a78bfa; border: 1px solid rgba(124,58,237,0.25); }
+
+/* ═══════════════════════════════════════
+   FORM INPUTS
+═══════════════════════════════════════ */
+.input-wrap { margin-bottom: 16px; }
+.input-label { font-size: 0.7rem; letter-spacing: 2px; color: var(--muted); margin-bottom: 6px; display: block; font-family: var(--font-m); }
+.input-field {
+  width: 100%;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--text);
+  font-family: var(--font-b);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-field:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,229,255,0.1); }
+.input-field::placeholder { color: var(--muted); }
+
+/* ═══════════════════════════════════════
+   SECTION HEADERS
+═══════════════════════════════════════ */
+.section-title {
+  font-family: var(--font-d); font-size: 0.8rem; font-weight: 700;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--cyan); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--border2), transparent);
+}
+
+/* ═══════════════════════════════════════
+   GRID LAYOUTS
+═══════════════════════════════════════ */
+.grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 16px; }
+@media(max-width:768px) {
+  .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr; }
+  .grid-auto { grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); }
+}
+
+/* ═══════════════════════════════════════
+   STAT CARD
+═══════════════════════════════════════ */
+.stat-card {
+  padding: 20px; border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: border-color 0.25s, transform 0.2s;
+  position: relative; overflow: hidden;
+}
+.stat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--cyan), var(--blue));
+  opacity: 0; transition: opacity 0.25s;
+}
+.stat-card:hover::before { opacity: 1; }
+.stat-label { font-size: 0.65rem; letter-spacing: 2px; color: var(--muted); font-family: var(--font-m); margin-bottom: 8px; }
+.stat-value { font-family: var(--font-d); font-size: 1.5rem; font-weight: 800; color: #fff; }
+.stat-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+.stat-icon { font-size: 2rem; position: absolute; right: 16px; top: 16px; opacity: 0.15; }
+
+/* ═══════════════════════════════════════
+   TABLE
+═══════════════════════════════════════ */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 10px 14px; text-align: left;
+  font-size: 0.65rem; letter-spacing: 2px; color: var(--muted);
+  border-bottom: 1px solid var(--border); font-family: var(--font-m);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 13px 14px; font-size: 0.9rem;
+  border-bottom: 1px solid rgba(0,229,255,0.05);
+}
+tbody tr:hover { background: rgba(0,229,255,0.03); }
+.td-mono { font-family: var(--font-m); font-size: 0.8rem; }
+
+/* ═══════════════════════════════════════
+   NEON DIVIDER
+═══════════════════════════════════════ */
+.neon-line {
+  height: 1px; width: 100%; margin: 20px 0;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0.3;
+}
+
+/* ═══════════════════════════════════════
+   CHART BARS (CSS-only animated)
+═══════════════════════════════════════ */
+.chart-bars {
+  display: flex; align-items: flex-end; gap: 6px;
+  height: 80px; padding: 0 4px;
+}
+.bar {
+  flex: 1; border-radius: 4px 4px 0 0;
+  background: linear-gradient(0deg, var(--blue), var(--cyan));
+  opacity: 0.7; transition: opacity 0.2s;
+  animation: barGrow 0.8s ease backwards;
+}
+.bar:hover { opacity: 1; }
+@keyframes barGrow { from{transform:scaleY(0);transform-origin:bottom} to{transform:scaleY(1);transform-origin:bottom} }
+.bar.red { background: linear-gradient(0deg, #cc0033, var(--red)); }
+
+/* Sparkline SVG */
+.sparkline { width: 100%; height: 50px; }
+
+/* ═══════════════════════════════════════
+   COIN ROW
+═══════════════════════════════════════ */
+.coin-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 700; flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════
+   PROGRESS BAR
+═══════════════════════════════════════ */
+.progress-track {
+  height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  transition: width 0.6s ease;
+}
+.progress-fill.green { background: linear-gradient(90deg, #00cc66, var(--green)); }
+.progress-fill.gold { background: linear-gradient(90deg, var(--orange), var(--gold)); }
+
+/* ═══════════════════════════════════════
+   QR CODE (simulated)
+═══════════════════════════════════════ */
+.qr-box {
+  width: 140px; height: 140px; margin: 0 auto;
+  border: 2px solid var(--cyan);
+  border-radius: 12px; padding: 10px;
+  display: grid; grid-template-columns: repeat(10,1fr); gap: 1px;
+  box-shadow: 0 0 20px rgba(0,229,255,0.2);
+}
+.qr-cell { border-radius: 1px; background: var(--bg); }
+.qr-cell.on { background: var(--cyan); }
+
+/* ═══════════════════════════════════════
+   TOGGLE SWITCH
+═══════════════════════════════════════ */
+.toggle-wrap { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.toggle-info h4 { font-size: 0.9rem; font-weight: 600; }
+.toggle-info p { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.toggle {
+  width: 44px; height: 24px; border-radius: 12px; border: none;
+  background: rgba(255,255,255,0.1); position: relative; cursor: pointer;
+  transition: background 0.2s; flex-shrink: 0;
+}
+.toggle.on { background: var(--cyan); }
+.toggle::after {
+  content: ''; position: absolute; left: 3px; top: 3px;
+  width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  transition: transform 0.2s;
+}
+.toggle.on::after { transform: translateX(20px); }
+
+/* ═══════════════════════════════════════
+   NOTIFICATION DOT
+═══════════════════════════════════════ */
+.notif-btn {
+  position: relative; background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 10px; font-size: 1rem; color: var(--text);
+}
+.notif-dot {
+  position: absolute; top: 4px; right: 4px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--cyan); box-shadow: 0 0 6px var(--cyan);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
+
+/* ═══════════════════════════════════════
+   WALLET ADDRESS DISPLAY
+═══════════════════════════════════════ */
+.addr-box {
+  background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 14px;
+  font-family: var(--font-m); font-size: 0.75rem;
+  color: var(--cyan); display: flex; align-items: center;
+  justify-content: space-between; gap: 10px; word-break: break-all;
+}
+.copy-btn {
+  background: rgba(0,229,255,0.1); border: 1px solid var(--border2);
+  color: var(--cyan); padding: 4px 10px; border-radius: 6px;
+  font-size: 0.65rem; font-family: var(--font-m); flex-shrink: 0;
+  cursor: pointer; transition: background 0.2s;
+}
+.copy-btn:hover { background: rgba(0,229,255,0.2); }
+
+/* ═══════════════════════════════════════
+   REFERRAL TREE
+═══════════════════════════════════════ */
+.ref-node {
+  padding: 10px 16px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 0.8rem; font-weight: 600;
+  white-space: nowrap;
+}
+.ref-line { width: 2px; height: 24px; background: var(--border2); margin: 0 auto; }
+.ref-row { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
+
+/* ═══════════════════════════════════════
+   FLOATING PARTICLES
+═══════════════════════════════════════ */
+.particle {
+  position: fixed; pointer-events: none; z-index: 0;
+  border-radius: 50%; opacity: 0;
+  animation: particleFloat linear infinite;
+}
+@keyframes particleFloat {
+  0% { opacity: 0; transform: translateY(100vh) scale(0); }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.3; }
+  100% { opacity: 0; transform: translateY(-20px) scale(1.5); }
+}
+
+/* ═══════════════════════════════════════
+   NFT CARD
+═══════════════════════════════════════ */
+.nft-card {
+  border-radius: 16px; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--border);
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.nft-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,229,255,0.15); }
+.nft-img {
+  width: 100%; aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 4rem;
+}
+.nft-info { padding: 14px; }
+.nft-name { font-weight: 700; font-size: 0.9rem; }
+.nft-price { color: var(--cyan); font-family: var(--font-m); font-size: 0.8rem; margin-top: 4px; }
+
+/* ═══════════════════════════════════════
+   CHAIN PILL
+═══════════════════════════════════════ */
+.chain-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 100px;
+  border: 1px solid var(--border); font-size: 0.75rem;
+  cursor: pointer; transition: all 0.2s; background: var(--surface2);
+}
+.chain-pill.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,229,255,0.08); }
+.chain-pill:hover { border-color: var(--border2); }
+
+/* ═══════════════════════════════════════
+   REWARD CARD
+═══════════════════════════════════════ */
+.reward-card {
+  padding: 20px; border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255,215,0,0.06), rgba(255,106,0,0.06));
+  border: 1px solid rgba(255,215,0,0.2);
+  text-align: center;
+}
+.reward-amount { font-family: var(--font-d); font-size: 2rem; font-weight: 900; color: var(--gold); }
+
+/* ═══════════════════════════════════════
+   ADMIN TABLE STATUS
+═══════════════════════════════════════ */
+.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
+.status-active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.status-pending { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+.status-inactive { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+/* ═══════════════════════════════════════
+   TOKENOMICS PIE (CSS)
+═══════════════════════════════════════ */
+.pie-chart {
+  width: 160px; height: 160px; border-radius: 50%;
+  background: conic-gradient(
+    var(--cyan) 0deg 115deg,
+    var(--blue) 115deg 187deg,
+    var(--purple) 187deg 241deg,
+    var(--gold) 241deg 295deg,
+    var(--green) 295deg 360deg
+  );
+  box-shadow: 0 0 30px rgba(0,229,255,0.2);
+  margin: 0 auto;
+}
+.pie-legend { display: flex; flex-direction: column; gap: 8px; }
+.pie-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+.pie-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════
+   LANDING PAGE SPECIFIC
+═══════════════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 40px 24px;
+  position: relative;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 16px; border-radius: 100px;
+  border: 1px solid var(--border2);
+  font-size: 0.7rem; font-family: var(--font-m); color: var(--cyan);
+  background: rgba(0,229,255,0.05); margin-bottom: 24px;
+  animation: fadeIn 0.6s ease;
+}
+.hero-title {
+  font-family: var(--font-d);
+  font-size: clamp(2.5rem, 7vw, 5.5rem);
+  font-weight: 900; line-height: 1;
+  letter-spacing: -2px; margin-bottom: 16px;
+}
+.hero-title span {
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 50%, var(--purple) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-sub { font-size: 1.15rem; color: var(--muted); max-width: 540px; margin: 0 auto 32px; line-height: 1.6; }
+.hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.hero-stats { display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; margin-top: 60px; }
+.hero-stat { text-align: center; }
+.hero-stat-val { font-family: var(--font-d); font-size: 1.8rem; font-weight: 900; color: var(--cyan); }
+.hero-stat-label { font-size: 0.7rem; color: var(--muted); letter-spacing: 2px; margin-top: 4px; }
+
+.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 20px; padding: 60px 24px; max-width: 1100px; margin: 0 auto; }
+.feature-card {
+  padding: 28px 24px; border-radius: 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  transition: all 0.3s; text-align: center;
+}
+.feature-card:hover { border-color: var(--border2); transform: translateY(-4px); box-shadow: 0 20px 50px rgba(0,229,255,0.1); }
+.feature-icon { font-size: 2.5rem; margin-bottom: 16px; }
+.feature-title { font-family: var(--font-d); font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; color: var(--cyan); margin-bottom: 8px; }
+.feature-desc { font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+
+.nav-landing {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  padding: 16px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(2,8,16,0.9); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-links { display: flex; gap: 24px; font-size: 0.85rem; font-weight: 600; }
+.nav-links a:hover { color: var(--cyan); }
+.nav-links a { transition: color 0.2s; }
+
+/* ═══════════════════════════════════════
+   AUTH PAGE
+═══════════════════════════════════════ */
+.auth-page {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 24px; position: relative;
+}
+.auth-card {
+  width: 100%; max-width: 440px;
+  background: rgba(4,12,24,0.95);
+  border: 1px solid var(--border);
+  border-radius: 24px; padding: 40px;
+  backdrop-filter: blur(40px);
+  position: relative; z-index: 1;
+}
+.auth-card::before {
+  content: ''; position: absolute; top: -1px; left: 20px; right: 20px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), var(--blue), transparent);
+}
+.auth-logo {
+  text-align: center; margin-bottom: 32px;
+}
+.auth-logo-text {
+  font-family: var(--font-d); font-size: 2rem; font-weight: 900;
+  background: linear-gradient(90deg, var(--cyan), var(--blue));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: 3px;
+}
+.auth-tabs { display: flex; background: rgba(0,0,0,0.3); border-radius: 10px; padding: 4px; margin-bottom: 28px; }
+.auth-tab {
+  flex: 1; padding: 9px; text-align: center;
+  border-radius: 8px; font-size: 0.8rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; letter-spacing: 1px;
+  font-family: var(--font-d); color: var(--muted); border: none; background: none;
+}
+.auth-tab.active { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: #000; }
+
+/* ═══════════════════════════════════════
+   DEPOSIT/WITHDRAW
+═══════════════════════════════════════ */
+.dep-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+.dep-tab {
+  flex: 1; padding: 12px; text-align: center;
+  border-radius: 10px; border: 1px solid var(--border);
+  font-family: var(--font-d); font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 2px; cursor: pointer; transition: all 0.2s;
+  background: none; color: var(--muted);
+}
+.dep-tab.active.green { background: rgba(0,255,136,0.1); border-color: var(--green); color: var(--green); }
+.dep-tab.active.red { background: rgba(255,51,102,0.1); border-color: var(--red); color: var(--red); }
+
+/* ═══════════════════════════════════════
+   STEP INDICATOR
+═══════════════════════════════════════ */
+.steps { display: flex; align-items: center; gap: 0; margin-bottom: 28px; }
+.step {
+  display: flex; align-items: center; gap: 8px; flex: 1;
+  font-size: 0.7rem; letter-spacing: 1px; color: var(--muted);
+}
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-size: 0.7rem; font-weight: 700;
+  background: var(--surface2); border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.step.active .step-num { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: #000; border: none; }
+.step.done .step-num { background: var(--green); color: #000; border: none; }
+.step-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; }
+
+/* ═══════════════════════════════════════
+   ANIMATED GLOW TEXT
+═══════════════════════════════════════ */
+.glow-text {
+  animation: glowPulse 2.5s ease-in-out infinite;
+}
+@keyframes glowPulse {
+  0%,100% { text-shadow: 0 0 8px rgba(0,229,255,0.4); }
+  50% { text-shadow: 0 0 20px rgba(0,229,255,0.8), 0 0 40px rgba(0,229,255,0.3); }
+}
+
+/* ═══════════════════════════════════════
+   ADMIN SIDEBAR HIGHLIGHT
+═══════════════════════════════════════ */
+.admin-badge {
+  background: linear-gradient(135deg, rgba(255,0,128,0.15), rgba(124,58,237,0.15));
+  border: 1px solid rgba(255,0,128,0.25);
+  border-radius: 6px; padding: 2px 8px;
+  font-size: 0.55rem; font-family: var(--font-m); color: var(--pink); letter-spacing: 1px;
+  margin-left: auto;
+}
+
+/* RESPONSIVE */
+@media(max-width:768px) {
+  .main-content { padding: 16px; }
+  .auth-card { padding: 28px 20px; }
+  .hero-title { font-size: 2.5rem; }
+  .nav-landing .nav-links { display: none; }
+  .hero-stats { gap: 20px; }
+  .topbar .ticker-strip { display: none; }
+}
+
+/* SCROLLABLE INNER AREA */
+.scroll-area { overflow-y: auto; max-height: 320px; }
+.scroll-area::-webkit-scrollbar { width: 3px; }
+.scroll-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* CHAIN BADGE */
+.chain-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.65rem; font-family: var(--font-m);
+  padding: 2px 8px; border-radius: 4px;
+  background: rgba(0,229,255,0.07); color: var(--muted); border: 1px solid var(--border);
+}
+
+/* LIVE DOT */
+.live-dot {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.65rem; font-family: var(--font-m); color: var(--green);
+}
+.live-dot::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 6px var(--green);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* OVERLAY for sidebar on mobile */
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0; z-index: 99;
+  background: rgba(0,0,0,0.7);
+}
+.sidebar-overlay.visible { display: block; }
+
+/* GRADIENT BORDER CARD */
+.grad-border {
+  position: relative; border-radius: 16px;
+  background: var(--surface); padding: 1px;
+  background: linear-gradient(135deg, var(--cyan), var(--blue), var(--purple));
+}
+.grad-border-inner {
+  background: var(--bg2); border-radius: 15px; padding: 20px;
+}
+
+/* AMOUNT INPUT */
+.amount-input-wrap {
+  position: relative;
+}
+.amount-input-wrap .currency-tag {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  font-family: var(--font-m); font-size: 0.75rem; color: var(--cyan);
+}
+
+/* ═══════════════════════════════════════
+   CHART LINE (CSS animated)
+═══════════════════════════════════════ */
+.mini-chart {
+  position: relative; height: 60px; overflow: hidden;
+}
+.mini-chart svg { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-grid"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<!-- Sidebar overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- ══════════════════════════════════════
+     PAGE 1: LANDING
+══════════════════════════════════════ -->
+<div class="page active" id="page-landing">
+  <!-- Landing Nav -->
+  <nav class="nav-landing">
+    <div class="logo-text" style="font-size:1.3rem;letter-spacing:3px;">AIZON</div>
+    <div class="nav-links">
+      <a href="#" onclick="goPage('page-landing')">Home</a>
+      <a href="#features">Features</a>
+      <a href="#tokenomics" onclick="goPage('page-tokenomics')">Tokenomics</a>
+      <a href="#" onclick="goPage('page-login')">Login</a>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-outline btn-sm" onclick="goPage('page-login')">LOGIN</button>
+      <button class="btn btn-cyan btn-sm" onclick="goPage('page-login')">LAUNCH APP ⚡</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <div class="hero" style="padding-top:100px;">
+    <div class="hero-badge">⚡ INDIA'S #1 WEB3 AI PLATFORM</div>
+    <h1 class="hero-title">
+      The Future of<br/><span>DeFi is</span><br/><span>AIZON</span>
+    </h1>
+    <p class="hero-sub">India's most advanced Web3 intelligence layer. Trade, earn, stake & grow with AI-powered DeFAI technology. Full INR support.</p>
+    <div class="hero-btns">
+      <button class="btn btn-cyan btn-lg" onclick="goPage('page-login')">🚀 GET STARTED FREE</button>
+      <button class="btn btn-outline btn-lg" onclick="goPage('page-tokenomics')">📊 VIEW TOKENOMICS</button>
+    </div>
+
+    <!-- Live ticker -->
+    <div style="margin-top:40px; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:100px; padding:8px 20px; overflow:hidden; max-width:700px; width:100%;">
+      <div style="display:flex; gap:24px; animation:tickerScroll 20s linear infinite; white-space:nowrap;">
+        <span style="font-family:var(--font-m);font-size:0.75rem;">
+          <span style="color:var(--muted)">BTC</span> <span style="color:var(--green)">₹72,45,890 ▲2.3%</span> &nbsp;
+          <span style="color:var(--muted)">ETH</span> <span style="color:var(--green)">₹2,56,340 ▲1.8%</span> &nbsp;
+          <span style="color:var(--muted)">ORI</span> <span style="color:var(--cyan)">₹4,672 ▲5.1%</span> &nbsp;
+          <span style="color:var(--muted)">BNB</span> <span style="color:var(--red)">₹49,230 ▼0.4%</span> &nbsp;
+          <span style="color:var(--muted)">SOL</span> <span style="color:var(--green)">₹14,560 ▲3.2%</span> &nbsp;
+          <span style="color:var(--muted)">MATIC</span> <span style="color:var(--green)">₹68.40 ▲1.1%</span> &nbsp;
+          <span style="color:var(--muted)">ADA</span> <span style="color:var(--red)">₹38.90 ▼0.9%</span> &nbsp;
+          <span style="color:var(--muted)">DOT</span> <span style="color:var(--green)">₹580 ▲2.7%</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hero-stat-val glow-text">₹4,200Cr+</div><div class="hero-stat-label">TOTAL VOLUME</div></div>
+      <div class="hero-stat"><div class="hero-stat-val glow-text">2.8L+</div><div class="hero-stat-label">ACTIVE USERS</div></div>
+      <div class="hero-stat"><div class="hero-stat-val glow-text">50+</div><div class="hero-stat-label">CHAINS SUPPORTED</div></div>
+      <div class="hero-stat"><div class="hero-stat-val glow-text">99.9%</div><div class="hero-stat-label">UPTIME</div></div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div id="features" class="features-grid">
+    <div class="feature-card"><div class="feature-icon">🤖</div><div class="feature-title">AI TRADING</div><div class="feature-desc">Proprietary DeFAI algorithms analyze markets 24/7 to maximize your yield with smart automation.</div></div>
+    <div class="feature-card"><div class="feature-icon">🔗</div><div class="feature-title">MULTI-CHAIN</div><div class="feature-desc">Trade across 50+ blockchains including ETH, BSC, Polygon, Solana & more — all in one place.</div></div>
+    <div class="feature-card"><div class="feature-icon">💎</div><div class="feature-title">NFT MARKETPLACE</div><div class="feature-desc">Buy, sell & mint NFTs with zero gas on our Layer-2 network. INR on/off ramp built in.</div></div>
+    <div class="feature-card"><div class="feature-icon">👥</div><div class="feature-title">MLM REFERRAL</div><div class="feature-desc">5-level deep referral system. Earn up to 25% commission on every transaction your network makes.</div></div>
+    <div class="feature-card"><div class="feature-icon">🏆</div><div class="feature-title">DAILY REWARDS</div><div class="feature-desc">Check in daily to earn ORI tokens. Complete missions for bonus multipliers and rare NFT drops.</div></div>
+    <div class="feature-card"><div class="feature-icon">🔐</div><div class="feature-title">BANK-GRADE SECURITY</div><div class="feature-desc">MPC wallets, biometric auth, 256-bit encryption and cold storage protect every rupee you hold.</div></div>
+  </div>
+
+  <!-- Supported Chains -->
+  <div style="padding:40px 24px; text-align:center; max-width:900px; margin:0 auto;">
+    <div class="section-title" style="justify-content:center;">SUPPORTED CHAINS</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:20px;">
+      <span class="chain-pill active">⟠ Ethereum</span>
+      <span class="chain-pill">◈ BNB Chain</span>
+      <span class="chain-pill">⬡ Polygon</span>
+      <span class="chain-pill">◎ Solana</span>
+      <span class="chain-pill">▲ Avalanche</span>
+      <span class="chain-pill">⬙ Arbitrum</span>
+      <span class="chain-pill">⬗ Optimism</span>
+      <span class="chain-pill">◇ Fantom</span>
+      <span class="chain-pill">⬥ TRON</span>
+      <span class="chain-pill">+ 41 more</span>
+    </div>
+    <div style="margin-top:48px;">
+      <button class="btn btn-cyan btn-lg" onclick="goPage('page-login')">🚀 JOIN AIZON NOW — IT'S FREE</button>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:24px;border-top:1px solid var(--border);color:var(--muted);font-size:0.75rem;font-family:var(--font-m);">
+    © 2025 AIZON · India's Web3 Intelligence Layer · Built on DeFAI · <span style="color:var(--cyan)">orizone.vip</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE 2: LOGIN / SIGNUP
+══════════════════════════════════════ -->
+<div class="page" id="page-login">
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="auth-logo-text">AIZON</div>
+        <div style="font-size:0.65rem;color:var(--muted);letter-spacing:3px;margin-top:4px;font-family:var(--font-m);">WEB3 INTELLIGENCE LAYER</div>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">LOGIN</button>
+        <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">SIGN UP</button>
+      </div>
+      <!-- Login Form -->
+      <div id="auth-login">
+        <div class="input-wrap">
+          <label class="input-label">EMAIL / PHONE</label>
+          <input type="text" class="input-field" placeholder="you@example.com"/>
+        </div>
+        <div class="input-wrap">
+          <label class="input-label">PASSWORD</label>
+          <input type="password" class="input-field" placeholder="••••••••"/>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+          <span style="font-size:0.75rem;color:var(--cyan);cursor:pointer;">Forgot password?</span>
+        </div>
+        <button class="btn btn-cyan" style="width:100%;margin-bottom:16px;" onclick="goPage('page-dashboard')">🔐 SECURE LOGIN</button>
+        <div style="text-align:center;font-size:0.8rem;color:var(--muted);margin-bottom:16px;">— OR CONTINUE WITH —</div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-ghost" style="flex:1;" onclick="goPage('page-dashboard')">🦊 MetaMask</button>
+          <button class="btn btn-ghost" style="flex:1;" onclick="goPage('page-dashboard')">🔗 WalletConnect</button>
+        </div>
+      </div>
+      <!-- Signup Form -->
+      <div id="auth-signup" style="display:none;">
+        <div class="input-wrap">
+          <label class="input-label">FULL NAME</label>
+          <input type="text" class="input-field" placeholder="Rahul Sharma"/>
+        </div>
+        <div class="input-wrap">
+          <label class="input-label">EMAIL</label>
+          <input type="email" class="input-field" placeholder="you@example.com"/>
+        </div>
+        <div class="input-wrap">
+          <label class="input-label">MOBILE NUMBER</label>
+          <input type="tel" class="input-field" placeholder="+91 98765 43210"/>
+        </div>
+        <div class="input-wrap">
+          <label class="input-label">REFERRAL CODE (OPTIONAL)</label>
+          <input type="text" class="input-field" placeholder="AIZON-XXXXX"/>
+        </div>
+        <div class="input-wrap">
+          <label class="input-label">PASSWORD</label>
+          <input type="password" class="input-field" placeholder="Min 8 characters"/>
+        </div>
+        <button class="btn btn-cyan" style="width:100%;" onclick="goPage('page-dashboard')">🚀 CREATE ACCOUNT</button>
+      </div>
+      <div style="text-align:center;margin-top:20px;">
+        <button class="btn btn-ghost btn-sm" onclick="goPage('page-landing')">← Back to Home</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     APP SHELL (pages 3–10)
+══════════════════════════════════════ -->
+<div id="app-shell" style="display:none;">
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-text">AIZON</div>
+      <div class="logo-sub">WEB3 INTELLIGENCE</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">MAIN</div>
+        <div class="nav-item active" id="nav-dashboard" onclick="appGoPage('page-dashboard','nav-dashboard')">
+          <span class="nav-icon">⬡</span> Dashboard
+        </div>
+        <div class="nav-item" id="nav-wallet" onclick="appGoPage('page-wallet','nav-wallet')">
+          <span class="nav-icon">💳</span> Wallet
+        </div>
+        <div class="nav-item" id="nav-deposit" onclick="appGoPage('page-deposit','nav-deposit')">
+          <span class="nav-icon">💰</span> Deposit / Withdraw
+        </div>
+        <div class="nav-item" id="nav-earnings" onclick="appGoPage('page-earnings','nav-earnings')">
+          <span class="nav-icon">📈</span> Earnings
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">COMMUNITY</div>
+        <div class="nav-item" id="nav-referral" onclick="appGoPage('page-referral','nav-referral')">
+          <span class="nav-icon">👥</span> MLM Referral
+        </div>
+        <div class="nav-item" id="nav-tokenomics" onclick="appGoPage('page-tokenomics','nav-tokenomics')">
+          <span class="nav-icon">🪙</span> Tokenomics
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">SYSTEM</div>
+        <div class="nav-item" id="nav-admin" onclick="appGoPage('page-admin','nav-admin')">
+          <span class="nav-icon">🛡️</span> Admin Panel <span class="admin-badge">ADMIN</span>
+        </div>
+        <div class="nav-item" id="nav-settings" onclick="appGoPage('page-settings','nav-settings')">
+          <span class="nav-icon">⚙️</span> Settings
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">RS</div>
+        <div>
+          <div class="user-name">Rahul Sharma</div>
+          <div class="user-email">rahul@aizon.in</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px;" onclick="goPage('page-landing')">⏻ Logout</button>
+    </div>
+  </div>
+
+  <!-- Overlay for sidebar -->
+  <div style="position:fixed;inset:0;z-index:99;background:rgba(0,0,0,0.7);display:none;" id="mobileOverlay" onclick="closeSidebar()"></div>
+
+  <!-- Main -->
+  <div style="min-height:100vh; padding-left:0;" id="appMain">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+        <div class="page-title" id="topbarTitle">DASHBOARD</div>
+      </div>
+      <div class="ticker-strip">
+        <div class="ticker-item"><span style="color:var(--muted)">BTC</span><span class="ticker-up">₹72.4L ▲2.3%</span></div>
+        <div class="ticker-item"><span style="color:var(--muted)">ETH</span><span class="ticker-up">₹2.56L ▲1.8%</span></div>
+        <div class="ticker-item"><span style="color:var(--muted)">ORI</span><span class="ticker-up">₹4,672 ▲5.1%</span></div>
+        <div class="ticker-item"><span style="color:var(--muted)">SOL</span><span class="ticker-up">₹14,560 ▲3.2%</span></div>
+        <div class="ticker-item"><span style="color:var(--muted)">BNB</span><span class="ticker-down">₹49,230 ▼0.4%</span></div>
+      </div>
+      <div class="topbar-right">
+        <div class="live-dot">LIVE</div>
+        <button class="notif-btn">🔔<div class="notif-dot"></div></button>
+        <button class="btn btn-cyan btn-sm" onclick="appGoPage('page-wallet','nav-wallet')">🦊 Connect</button>
+      </div>
+    </div>
+
+    <!-- ── PAGE 3: DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="main-content">
+
+        <!-- Welcome -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div style="font-family:var(--font-d);font-size:1.1rem;font-weight:700;">
+              Welcome back, <span style="color:var(--cyan);">Rahul</span> 👋
+            </div>
+            <div style="color:var(--muted);font-size:0.85rem;margin-top:4px;">
+              Your portfolio is up <span style="color:var(--green);">+12.4%</span> this month
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-green btn-sm" onclick="appGoPage('page-deposit','nav-deposit')">⬇ DEPOSIT</button>
+            <button class="btn btn-red btn-sm" onclick="appGoPage('page-deposit','nav-deposit')">⬆ WITHDRAW</button>
+            <button class="btn btn-cyan btn-sm">⚡ QUICK SWAP</button>
+          </div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="grid-4" style="margin-bottom:20px;">
+          <div class="stat-card">
+            <div class="stat-label">TOTAL PORTFOLIO</div>
+            <div class="stat-value" style="color:var(--cyan);">₹4,28,650</div>
+            <div class="stat-sub"><span style="color:var(--green)">▲ 12.4%</span> this month</div>
+            <div class="stat-icon">💎</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">TODAY'S P&L</div>
+            <div class="stat-value" style="color:var(--green);">+₹5,240</div>
+            <div class="stat-sub">Unrealized gains today</div>
+            <div class="stat-icon">📈</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">REFERRAL INCOME</div>
+            <div class="stat-value" style="color:var(--gold);">₹18,320</div>
+            <div class="stat-sub">14 active referrals</div>
+            <div class="stat-icon">👥</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">ORI STAKED</div>
+            <div class="stat-value">248.5</div>
+            <div class="stat-sub"><span style="color:var(--cyan)">18% APY</span> earning</div>
+            <div class="stat-icon">🪙</div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:20px;">
+          <!-- Portfolio Chart -->
+          <div class="glass card">
+            <div class="section-title">PORTFOLIO CHART</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+              <div>
+                <div style="font-family:var(--font-d);font-size:1.6rem;font-weight:800;color:#fff;">₹4,28,650</div>
+                <div style="font-size:0.8rem;color:var(--green);">▲ +₹47,200 (12.4%)</div>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-ghost btn-sm">1D</button>
+                <button class="btn btn-cyan btn-sm">1W</button>
+                <button class="btn btn-ghost btn-sm">1M</button>
+                <button class="btn btn-ghost btn-sm">1Y</button>
+              </div>
+            </div>
+            <!-- SVG Chart -->
+            <div style="height:120px;position:relative;overflow:hidden;">
+              <svg viewBox="0 0 400 120" style="width:100%;height:100%;" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0,100 C30,90 60,110 90,85 C120,60 150,75 180,55 C210,35 240,60 270,40 C300,20 330,35 360,15 L400,10 L400,120 L0,120Z" fill="url(#chartGrad)"/>
+                <path d="M0,100 C30,90 60,110 90,85 C120,60 150,75 180,55 C210,35 240,60 270,40 C300,20 330,35 360,15 L400,10" fill="none" stroke="#00e5ff" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="400" cy="10" r="4" fill="#00e5ff"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Holdings -->
+          <div class="glass card">
+            <div class="section-title">MY HOLDINGS</div>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <!-- BTC -->
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="coin-icon" style="background:linear-gradient(135deg,#f7931a,#e67e00);">₿</div>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;">
+                    <span style="font-weight:600;">Bitcoin</span>
+                    <span style="font-family:var(--font-m);">₹1,92,450</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                    <span style="font-size:0.75rem;color:var(--muted);">0.00265 BTC</span>
+                    <span style="font-size:0.75rem;color:var(--green);">▲ 2.3%</span>
+                  </div>
+                  <div class="progress-track" style="margin-top:6px;"><div class="progress-fill" style="width:45%;"></div></div>
+                </div>
+              </div>
+              <!-- ETH -->
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="coin-icon" style="background:linear-gradient(135deg,#627eea,#4a6cd4);">Ξ</div>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;">
+                    <span style="font-weight:600;">Ethereum</span>
+                    <span style="font-family:var(--font-m);">₹1,28,340</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                    <span style="font-size:0.75rem;color:var(--muted);">0.502 ETH</span>
+                    <span style="font-size:0.75rem;color:var(--green);">▲ 1.8%</span>
+                  </div>
+                  <div class="progress-track" style="margin-top:6px;"><div class="progress-fill" style="width:30%;"></div></div>
+                </div>
+              </div>
+              <!-- ORI -->
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="coin-icon" style="background:linear-gradient(135deg,var(--cyan),var(--blue));">◎</div>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;">
+                    <span style="font-weight:600;">Orizon (ORI)</span>
+                    <span style="font-family:var(--font-m);">₹65,840</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                    <span style="font-size:0.75rem;color:var(--muted);">14.1 ORI</span>
+                    <span style="font-size:0.75rem;color:var(--cyan);">▲ 5.1%</span>
+                  </div>
+                  <div class="progress-track" style="margin-top:6px;"><div class="progress-fill" style="width:15%;background:linear-gradient(90deg,var(--blue),var(--cyan));"></div></div>
+                </div>
+              </div>
+              <!-- SOL -->
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="coin-icon" style="background:linear-gradient(135deg,#9945ff,#14f195);">◎</div>
+                <div style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;">
+                    <span style="font-weight:600;">Solana</span>
+                    <span style="font-family:var(--font-m);">₹42,020</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                    <span style="font-size:0.75rem;color:var(--muted);">2.885 SOL</span>
+                    <span style="font-size:0.75rem;color:var(--green);">▲ 3.2%</span>
+                  </div>
+                  <div class="progress-track" style="margin-top:6px;"><div class="progress-fill" style="width:10%;background:linear-gradient(90deg,#9945ff,#14f195);"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Reward + NFT + Recent Txn -->
+        <div class="grid-3" style="margin-bottom:20px;">
+          <!-- Daily Reward -->
+          <div class="reward-card">
+            <div style="font-family:var(--font-m);font-size:0.65rem;color:var(--gold);letter-spacing:3px;margin-bottom:8px;">DAILY REWARD</div>
+            <div class="reward-amount">+12 ORI</div>
+            <div style="font-size:0.8rem;color:var(--muted);margin:8px 0;">Day 7 streak 🔥</div>
+            <div style="display:flex;gap:4px;justify-content:center;margin-bottom:12px;">
+              <div style="width:28px;height:28px;border-radius:6px;background:rgba(255,215,0,0.2);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:0.8rem;">✓</div>
+              <div style="width:28px;height:28px;border-radius:6px;background:rgba(255,215,0,0.2);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:0.8rem;">✓</div>
+              <div style="width:28px;height:28px;border-radius:6px;background:rgba(255,215,0,0.2);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:0.8rem;">✓</div>
+              <div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--gold),var(--orange));border:none;display:flex;align-items:center;justify-content:center;font-size:0.8rem;">⭐</div>
+              <div style="width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.8rem;">8</div>
+              <div style="width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.8rem;">9</div>
+              <div style="width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.8rem;">10</div>
+            </div>
+            <button class="btn btn-gold btn-sm" style="width:100%;">🎁 CLAIM REWARD</button>
+          </div>
+
+          <!-- NFT Preview -->
+          <div class="glass card">
+            <div class="section-title">FEATURED NFT</div>
+            <div class="nft-card">
+              <div class="nft-img" style="background:linear-gradient(135deg,#0a0a2e,#1a1a4e,#0a1a3e);">
+                🤖
+              </div>
+              <div class="nft-info">
+                <div class="nft-name">AIZON Pilot #042</div>
+                <div class="nft-price">₹28,500 · 6.1 ORI</div>
+                <button class="btn btn-cyan btn-sm" style="margin-top:10px;width:100%;">BUY NOW</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="glass card">
+            <div class="section-title">NETWORK STATS</div>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:4px;">
+                  <span style="color:var(--muted);">Staking APY</span><span style="color:var(--green);">18.5%</span>
+                </div>
+                <div class="progress-track"><div class="progress-fill green" style="width:74%;"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:4px;">
+                  <span style="color:var(--muted);">Network Load</span><span>42%</span>
+                </div>
+                <div class="progress-track"><div class="progress-fill" style="width:42%;"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:4px;">
+                  <span style="color:var(--muted);">Referral Target</span><span style="color:var(--gold);">70%</span>
+                </div>
+                <div class="progress-track"><div class="progress-fill gold" style="width:70%;"></div></div>
+              </div>
+              <div class="neon-line"></div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;">
+                <span style="color:var(--muted);">Gas Price</span>
+                <span class="badge badge-green">LOW — 12 GWEI</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;">
+                <span style="color:var(--muted);">Active Chain</span>
+                <span class="chain-badge">⟠ Ethereum</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="glass card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div class="section-title" style="margin-bottom:0;">RECENT TRANSACTIONS</div>
+            <button class="btn btn-ghost btn-sm">VIEW ALL</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>TYPE</th><th>ASSET</th><th>AMOUNT (INR)</th><th>AMOUNT (CRYPTO)</th><th>DATE</th><th>STATUS</th><th>TX HASH</th>
+              </tr></thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge badge-green">⬇ DEPOSIT</span></td>
+                  <td><span style="font-weight:600;">Bitcoin</span></td>
+                  <td class="td-mono">₹50,000</td>
+                  <td class="td-mono">0.00069 BTC</td>
+                  <td style="color:var(--muted);font-size:0.8rem;">07 May 2026</td>
+                  <td><span class="status-dot status-active"></span>Confirmed</td>
+                  <td class="td-mono" style="color:var(--cyan);">0x3a4b...f9e2</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-cyan">⇄ SWAP</span></td>
+                  <td><span style="font-weight:600;">ETH → ORI</span></td>
+                  <td class="td-mono">₹25,600</td>
+                  <td class="td-mono">0.1 ETH</td>
+                  <td style="color:var(--muted);font-size:0.8rem;">06 May 2026</td>
+                  <td><span class="status-dot status-active"></span>Confirmed</td>
+                  <td class="td-mono" style="color:var(--cyan);">0x7c9d...12ab</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-red">⬆ WITHDRAW</span></td>
+                  <td><span style="font-weight:600;">USDT</span></td>
+                  <td class="td-mono">₹12,500</td>
+                  <td class="td-mono">150 USDT</td>
+                  <td style="color:var(--muted);font-size:0.8rem;">05 May 2026</td>
+                  <td><span class="status-dot status-active"></span>Confirmed</td>
+                  <td class="td-mono" style="color:var(--cyan);">0x1f8a...45cd</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-gold">🎁 REWARD</span></td>
+                  <td><span style="font-weight:600;">ORI</span></td>
+                  <td class="td-mono">₹560</td>
+                  <td class="td-mono">0.12 ORI</td>
+                  <td style="color:var(--muted);font-size:0.8rem;">04 May 2026</td>
+                  <td><span class="status-dot status-pending"></span>Pending</td>
+                  <td class="td-mono" style="color:var(--cyan);">0x8b3c...90ef</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── PAGE 4: WALLET ── -->
+    <div class="page" id="page-wallet">
+      <div class="main-content">
+
+        <!-- Chain Selector -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
+          <span class="chain-pill active">⟠ Ethereum</span>
+          <span class="chain-pill">◈ BNB Chain</span>
+          <span class="chain-pill">⬡ Polygon</span>
+          <span class="chain-pill">◎ Solana</span>
+          <span class="chain-pill">▲ Avalanche</span>
+          <span class="chain-pill">+ Multi-Chain</span>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:20px;">
+          <!-- Main wallet card -->
+          <div style="background:linear-gradient(135deg,rgba(0,229,255,0.08),rgba(26,111,255,0.08));border:1px solid var(--border2);border-radius:20px;padding:28px;position:relative;overflow:hidden;">
+            <div style="position:absolute;right:-20px;top:-20px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(0,229,255,0.1),transparent);"></div>
+            <div style="font-family:var(--font-m);font-size:0.65rem;color:var(--muted);letter-spacing:3px;margin-bottom:8px;">TOTAL BALANCE</div>
+            <div style="font-family:var(--font-d);font-size:2.5rem;font-weight:900;color:#fff;letter-spacing:-1px;">₹4,28,650</div>
+            <div style="font-size:0.9rem;color:var(--green);margin-top:4px;">≈ 5.924 ETH &nbsp;·&nbsp; ▲ +12.4%</div>
+            <div class="neon-line"></div>
+            <div style="margin-bottom:12px;">
+              <div style="font-family:var(--font-m);font-size:0.65rem;color:var(--muted);letter-spacing:2px;margin-bottom:6px;">WALLET ADDRESS</div>
+              <div class="addr-box">
+                0x4a8F3c...9dB7e2a1F
+                <button class="copy-btn" onclick="this.textContent='✓ Copied'">📋 Copy</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-green btn-sm" onclick="appGoPage('page-deposit','nav-deposit')">⬇ DEPOSIT</button>
+              <button class="btn btn-red btn-sm" onclick="appGoPage('page-deposit','nav-deposit')">⬆ SEND</button>
+              <button class="btn btn-cyan btn-sm">⇄ SWAP</button>
+              <button class="btn btn-ghost btn-sm">📱 QR CODE</button>
+            </div>
+          </div>
+
+          <!-- QR Code -->
+          <div class="glass card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+            <div style="font-family:var(--font-m);font-size:0.65rem;color:var(--muted);letter-spacing:3px;">RECEIVE QR CODE</div>
+            <!-- Simulated QR -->
+            <div class="qr-box" id="qrBox"></div>
+            <div style="font-size:0.75rem;color:var(--muted);text-align:center;">Scan to receive crypto<br/>to your Aizon wallet</div>
+            <button class="btn btn-outline btn-sm">⬇ DOWNLOAD QR</button>
+          </div>
+        </div>
+
+        <!-- Token list -->
+        <div class="glass card" style="margin-bottom:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div class="section-title" style="margin-bottom:0;">TOKEN BALANCES</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost btn-sm">+ ADD TOKEN</button>
+              <button class="btn btn-cyan btn-sm">🔄 REFRESH</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>TOKEN</th><th>BALANCE</th><th>VALUE (INR)</th><th>PRICE</th><th>24H CHANGE</th><th>CHAIN</th><th>ACTIONS</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><div style="display:flex;align-items:center;gap:10px;"><div class="coin-icon" style="width:32px;height:32px;background:linear-gradient(135deg,#f7931a,#e67e00);font-size:0.9rem;">₿</div><div><div style="font-weight:600;">Bitcoin</div><div style="font-size:0.7rem;color:var(--muted);">BTC</div></div></div></td>
+                  <td class="td-mono">0.00265</td>
+                  <td class="td-mono">₹1,92,450</td>
+                  <td class="td-mono">₹72,45,890</td>
+                  <td><span class="badge badge-green">▲ 2.3%</span></td>
+                  <td><span class="chain-badge">⟠ ETH</span></td>
+                  <td><div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm">Send</button><button class="btn btn-cyan btn-sm">Swap</button></div></td>
+                </tr>
+                <tr>
+                  <td><div style="display:flex;align-items:center;gap:10px;"><div class="coin-icon" style="width:32px;height:32px;background:linear-gradient(135deg,#627eea,#4a6cd4);font-size:0.9rem;">Ξ</div><div><div style="font-weight:600;">Ethereum</div><div style="font-size:0.7rem;color:var(--muted);">ETH</div></div></div></td>
+                  <td class="td-mono">0.502</td>
+                  <td class="td-mono">₹1,28,340</td>
+                  <td class="td-mono">₹2,56,340</td>
+                  <td><span class="badge badge-green">▲ 1.8%</span></td>
+                  <td><span class="chain-badge">⟠ ETH</span></td>
+                  <td><div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm">Send</button><button class="btn btn-cyan btn-sm">Swap</button></div></td>
+                </tr>
+                <tr>
+                  <td><div style="display:flex;align-items:center;gap:10px;"><div class="coin-icon" style="width:32px;height:32px;background:linear-gradient(135deg,var(--cyan),var(--blue));font-size:0.9rem;">◎</div><div><div style="font-weight:600;">Orizon</div><div style="font-size:0.7rem;color:var(--muted);">ORI</div></div></div></td>
+                  <td class="td-mono">14.1</td>
+                  <td class="td-mono">₹65,890</td>
+                  <td class="td-mono">₹4,672</td>
+                  <td><span class="badge badge-cyan">▲ 5.1%</span></td>
+                  <td><span class="chain-badge">◈ BSC</span></td>
+                  <td><div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm">Send</button><button class="btn btn-cyan btn-sm">Stake</button></div></td>
+                </tr>
+                <tr>
+                  <td><div style="display:flex;align-items:center;gap:10px;"><div class="coin-icon" style="width:32px;height:32px;background:linear-gradient(135deg,#9945ff,#14f195);font-size:0.9rem;">◎</div><div><div style="font-weight:600;">Solana</div><div style="font-size:0.7rem;color:var(--muted);">SOL</div></div></div></td>
+                  <td class="td-mono">2.885</td>
+                  <td class="td-mono">₹41,970</td>
+                  <td class="td-mono">₹14,560</td>
+                  <td><span class="badge badge-green">▲ 3.2%</span></td>
+                  <td><span class="chain-badge">◎ SOL</span></td>
+                  <td><div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm">Send</button><button class="btn btn-cyan btn-sm">Swap</button></div></td>
+                </tr>
+                <tr>
+                  <td><div style="display:flex;align-items:center;gap:10px;"><div class="coin-icon" style="width:32px;height:32px;background:linear-gradient(135deg,#26a17b,#1a7a5e);font-size:0.8rem;">₮</div><div><div style="font-weight:600;">Tether</div><div style="font-size:0.7rem;color:var(--muted);">USDT</div></div></div></td>
+                  <td class="td-mono">250.0</td>
+                  <td class="td-mono">₹20,850</td>
+                  <td class="td-mono">₹83.40</td>
+                  <td><span class="badge" style="background:rgba(255,255,255,0.05);color:var(--muted);border:1px solid var(--border);">— 0.0%</span></td>
+                  <td><span class="chain-badge">⟠ ETH</span></td>
+                  <td><div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm">Send</button><button class="btn btn-cyan btn-sm">Swap</button></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- NFT Gallery -->
+        <div class="glass card">
+          <div class="section-title">MY NFT COLLECTION</div>
+          <div class="grid-4">
+            <div class="nft-card"><div class="nft-img" style="background:linear-gradient(135deg,#0a0a2e,#1a1a4e);">🤖</div><div class="nft-info"><div class="nft-name">Pilot #042</div><div class="nft-price">₹28,500</div></div></div>
+            <div class="nft-card"><div class="nft-img" style="background:linear-gradient(135deg,#0d1a0d,#1a3a1a);">🌿</div><div class="nft-info"><div class="nft-name">Genesis #007</div><div class="nft-price">₹45,000</div></div></div>
+            <div class="nft-card"><div class="nft-img" style="background:linear-gradient(135deg,#1a0a0a,#3a1a1a);">🔥</div><div class="nft-info"><div class="nft-name">Phoenix #113</div><div class="nft-price">₹18,200</div></div></div>
+            <div class="nft-card"><div class="nft-img" style="background:linear-gradient(135deg,#0a0a1a,#1a0a3a);cursor:pointer;" onclick="appGoPage('page-tokenomics','nav-tokenomics')">+<br/><span style="font-size:0.8rem;color:var(--muted);">Browse More</span></div><div class="nft-info"><div class="nft-name">NFT Marketplace</div><div class="nft-price" style="color:var(--cyan);">500+ items</div></div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── PAGE 5: MLM REFERRAL ── -->
+    <div class="page" id="page-referral">
+      <div class="main-content">
+
+        <!-- My referral code -->
+        <div style="background:linear-gradient(135deg,rgba(0,229,255,0.07),rgba(124,58,237,0.07));border:1px solid rgba(0,229,255,0.2);border-radius:20px;padding:28px;margin-bottom:20px;text-align:center;">
+          <div style="font-family:var(--font-m);font-size:0.65rem;color:var(--muted);letter-spacing:3px;margin-bottom:10px;">YOUR REFERRAL CODE</div>
+          <div style="font-family:var(--font-d);font-size:2rem;font-weight:900;color:var(--cyan);letter-spacing:6px;margin-bottom:16px;">AIZON-RS2847</div>
+          <div class="addr-box" style="max-width:500px;margin:0 auto 16px;">
+            https://aizon.in/ref/RS2847
+            <button class="copy-btn" onclick="this.textContent='✓ Copied'">📋 Copy</button>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+            <button class="btn btn-cyan btn-sm">📤 SHARE LINK</button>
+            <button class="btn btn-ghost btn-sm">📱 WHATSAPP</button>
+            <button class="btn btn-ghost btn-sm">📘 FACEBOOK</button>
+            <button class="btn btn-ghost btn-sm">🐦 TWITTER/X</button>
+          </div>
+        </div>
+
+        <!-- Referral Stats -->
+        <div class="grid-4" style="margin-bottom:20px;">
+          <div class="stat-card"><div class="stat-label">TOTAL EARNED</div><div class="stat-value" style="color:var(--gold);">₹18,320</div><div class="stat-sub">All-time referral income</div><div class="stat-icon">💰</div></div>
+          <div class="stat-card"><div class="stat-label">DIRECT REFS</div><div class="stat-value">14</div><div class="stat-sub">Level 1 active</div><div class="stat-icon">👤</div></div>
+          <div class="stat-card"><div class="stat-label">TOTAL NETWORK</div><div class="stat-value">87</div><div class="stat-sub">5 levels deep</div><div class="stat-icon">🌐</div></div>
+          <div class="stat-card"><div class="stat-label">THIS MONTH</div><div class="stat-value" style="color:var(--green);">₹3,450</div><div class="stat-sub"><span style="color:var(--green)">▲ 24%</span> vs last month</div><div class="stat-icon">📈</div></div>
+        </div>
+
+        <!-- Commission levels -->
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div class="glass card">
+            <div class="section-title">COMMISSION STRUCTURE</div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:rgba(0,229,255,0.05);border:1px solid var(--border2);border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;color:#000;font-size:0.8rem;">L1</div><div><div style="font-weight:600;">Level 1 — Direct</div><div style="font-size:0.75rem;color:var(--muted);">14 active users</div></div></div>
+                <div style="text-align:right;"><div style="font-family:var(--font-d);color:var(--cyan);font-weight:800;">10%</div><div style="font-size:0.7rem;color:var(--muted);">Per transaction</div></div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:rgba(26,111,255,0.05);border:1px solid var(--border);border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;color:#fff;font-size:0.8rem;">L2</div><div><div style="font-weight:600;">Level 2</div><div style="font-size:0.75rem;color:var(--muted);">28 users</div></div></div>
+                <div style="text-align:right;"><div style="font-family:var(--font-d);color:var(--blue);font-weight:800;">7%</div><div style="font-size:0.7rem;color:var(--muted);">Per transaction</div></div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:rgba(124,58,237,0.05);border:1px solid var(--border);border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--purple),var(--pink));display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;color:#fff;font-size:0.8rem;">L3</div><div><div style="font-weight:600;">Level 3</div><div style="font-size:0.75rem;color:var(--muted);">21 users</div></div></div>
+                <div style="text-align:right;"><div style="font-family:var(--font-d);color:#a78bfa;font-weight:800;">5%</div><div style="font-size:0.7rem;color:var(--muted);">Per transaction</div></div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:rgba(255,0,128,0.05);border:1px solid var(--border);border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--pink),var(--orange));display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;color:#fff;font-size:0.8rem;">L4</div><div><div style="font-weight:600;">Level 4</div><div style="font-size:0.75rem;color:var(--muted);">16 users</div></div></div>
+                <div style="text-align:right;"><div style="font-family:var(--font-d);color:var(--pink);font-weight:800;">2%</div><div style="font-size:0.7rem;color:var(--muted);">Per transaction</div></div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:rgba(255,106,0,0.05);border:1px solid var(--border);border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-weight:800;color:#000;font-size:0.8rem;">L5</div><div><div style="font-weight:600;">Level 5</div><div style="font-size:0.75rem;color:var(--muted);">8 users</div></div></div>
+                <div style="text-align:right;"><div style="font-family:var(--font-d);color:var(--gold);font-weight:800;">1%</div><div style="font-size:0.7rem;color:var(--muted);">Per transaction</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Referral Tree Visualization -->
+          <div class="glass card">
+            <div class="section-title">NETWORK TREE</div>
+            <div style="text-align:center;padding:10px 0;">
+              <!-- Root -->
+              <div style="display:flex;justify-content:center;margin-bottom:8px;">
+                <div class="ref-node" style="background:linear-gradient(135deg,rgba(0,229,255,0.15),rgba(26,111,255,0.15));border-color:var(--cyan);color:var(--cyan);">
+                  👤 You (RS2847)
+                </div>
+              </div>
+              <div class="ref-line"></div>
+              <!-- Level 1 -->
+              <div class="ref-row" style="margin-bottom:8px;">
+                <div class="ref-node">👤 Amit K.</div>
+                <div class="ref-node">👤 Priya S.</div>
+                <div class="ref-node">👤 Ravi M.</div>
+                <div class="ref-node" style="color:var(--muted);">+11 more</div>
+              </div>
+              <div class="ref-line"></div>
+              <!-- Level 2 -->
+              <div class="ref-row" style="margin-bottom:8px;">
+                <div class="ref-node" style="font-size:0.75rem;padding:7px 10px;">Sagar P.</div>
+                <div class="ref-node" style="font-size:0.75rem;padding:7px 10px;">Neha R.</div>
+                <div class="ref-node" style="font-size:0.75rem;padding:7px 10px;">Kiran B.</div>
+                <div class="ref-node" style="font-size:0.75rem;padding:7px 10px;">+25 more</div>
+              </div>
+              <div style="text-align:center;margin-top:12px;">
+                <div style="font-size:0.75rem;color:var(--muted);">L3: 21 users · L4: 16 users · L5: 8 users</div>
+                <div style="font-family:var(--font-d);font-size:0.8rem;color:var(--gold);margin-top:8px;">87 TOTAL NETWORK</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Referrals -->
+        <div class="glass card">
+          <div class="section-title">TOP PERFORMING REFERRALS</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>USER</th><th>LEVEL</th><th>JOINED</th><th>TRANSACTIONS</th><th>EARNED FOR YOU</th><th>STATUS</th></tr></thead>
+              <tbody>
+                <tr><td style="color:var(--gold);font-weight:700;">1</td><td>Amit Kumar</td><td><span class="badge badge-cyan">L1</span></td><td style="color:var(--muted);font-size:0.8rem;">Jan 2026</td><td class="td-mono">142</td><td class="td-mono" style="color:var(--green);">₹4,820</td><td><span class="status-dot status-active"></span>Active</td></tr>
+                <tr><td style="color:var(--muted);font-weight:700;">2</td><td>Priya Sharma</td><td><span class="badge badge-cyan">L1</span></td><td style="color:var(--muted);font-size:0.8rem;">Feb 2026</td><td class="td-mono">98</td><td class="td-mono" style="color:var(--green);">₹3,120</td><td><span class="status-dot status-active"></span>Active</td></tr>
+                <tr><td style="color:var(--muted);font-weight:700;">3</td><td>Ravi Mehta</td><td><span class="badge badge-purple">L2</span></td><td style="color:var(--muted);font-size:0.8rem;">Mar 2026</td><td class="td-mono">67</td><td class="td-mono" style="color:var(--green);">₹1,890</td><td><span class="status-dot status-active"></span>Active</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── PAGE 6: EARNINGS ── -->
+    <div class="page" id="page-earnings">
+      <div class="main-content">
+
+        <div class="grid-4" style="margin-bottom:20px;">
+          <div class="stat-card"><div class="stat-label">TOTAL EARNINGS</div><div class="stat-value" style="color:var(--green);">₹52,840</div><div class="stat-sub">All-time combined</div><div class="stat-icon">💰</div></div>
+          <div class="stat-card"><div class="stat-label">STAKING REWARDS</div><div class="stat-value" style="color:var(--cyan);">₹14,200</div><div class="stat-sub">248.5 ORI staked</div><div class="stat-icon">🔒</div></div>
+          <div class="stat-card"><div class="stat-label">REFERRAL INCOME</div><div class="stat-value" style="color:var(--gold);">₹18,320</div><div class="stat-sub">87-user network</div><div class="stat-icon">👥</div></div>
+          <div class="stat-card"><div class="stat-label">TRADING PROFIT</div><div class="stat-value" style="color:var(--green);">₹20,320</div><div class="stat-sub"><span style="color:var(--green)">▲ 18.3%</span> ROI</div><div class="stat-icon">📊</div></div>
+        </div>
+
+        <!-- Earnings chart -->
+        <div class="glass card" style="margin-bottom:20px;">
+          <div class="section-title">MONTHLY EARNINGS</div>
+          <div style="display:flex;align-items:flex-end;gap:8px;height:140px;padding:10px 0;">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="font-family:var(--font-m);font-size:0.55rem;color:var(--muted);">₹2.1k</div>
+              <div class="bar" style="height:40%;animation-delay:0.1s;"></div>
+              <div style="font-size:0.6rem;color:var(--muted);">Nov</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="font-family:var(--font-m);font-size:0.55rem;color:var(--muted);">₹3.4k</div>
+              <div class="bar" style="height:55%;animation-delay:0.15s;"></div>
+              <div style="font-size:0.6rem;color:var(--muted);">Dec</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="font-family:var(--font-m);font-size:0.55rem;color:var(--muted);">₹4.8k</div>
+              <div class="bar" style="height:70%;animation-delay:0.2s;"></div>
+              <div style="font-size:0.6rem;color:var(--muted);">Jan</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="font-family:var(--font-m);font-size:0.55rem;color:var(--muted);">₹6.2k</div>
+              <div class="bar" style="height:85%;animation-delay:0.25s;"></div>
+              <div style="font-size:0.6rem;color:var(--muted);">Feb</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="font-family:var(--font-m);font-size:0.55rem;color:var(--muted);">₹8.1k</div>
+              <div class="bar" style="height:100%;animation-delay:0.3s;"></div>
+              <div style="font-size:0.6rem;color:var(--muted);">Mar</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="font-family:var(--font-m);font-size:0.55rem;color:var(--muted);">₹7.4k</div>
+              <div class="bar" style="height:90%;animation-delay:0.35s;"></div>
+              <div style="font-size:0.6rem;color:var(--muted);">Apr</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <div style="font-family:var(--font-m);font-size:0.55rem;color:var(--muted);">₹3.5k</div>
+              <div class="bar" style="height:44%;background:linear-gradient(0deg,rgba(0,229,255,0.4),rgba(0,229,255,0.7));animation-delay:0.4s;"></div>
+              <div style="font-size:0.6rem;color:var(--cyan);">May*</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Staking + Passive -->
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div class="glass card">
+            <div class="section-title">STAKING POSITIONS</div>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div style="padding:14px;background:rgba(0,229,255,0.04);border:1px solid var(--border);border-radius:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                  <div style="font-weight:600;">ORI — 90 Day Lock</div>
+                  <span class="badge badge-green">ACTIVE</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:0.8rem;">
+                  <div><div style="color:var(--muted);font-size:0.65rem;">STAKED</div><div class="td-mono">248.5 ORI</div></div>
+                  <div><div style="color:var(--muted);font-size:0.65rem;">APY</div><div style="color:var(--green);">18.5%</div></div>
+                  <div><div style="color:var(--muted);font-size:0.65rem;">EARNED</div><div style="color:var(--cyan);">₹14,200</div></div>
+                </div>
+                <div style="margin-top:10px;">
+                  <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--muted);margin-bottom:4px;"><span>Lock progress</span><span>67%</span></div>
+                  <div class="progress-track"><div class="progress-fill" style="width:67%;"></div></div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:10px;">
+                  <button class="btn btn-cyan btn-sm">Claim Rewards</button>
+                  <button class="btn btn-ghost btn-sm">Restake</button>
+                </div>
+              </div>
+              <div style="padding:14px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:12px;">
+                <div style="font-size:0.85rem;color:var(--muted);text-align:center;padding:10px 0;">
+                  <div style="font-size:2rem;margin-bottom:8px;">+</div>
+                  <button class="btn btn-outline btn-sm">STAKE MORE ORI</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass card">
+            <div class="section-title">INCOME BREAKDOWN</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;">
+                  <div style="width:10px;height:10px;border-radius:50%;background:var(--cyan);"></div>Trading P&L
+                </div>
+                <div style="font-family:var(--font-m);font-weight:700;">₹20,320 <span style="color:var(--muted);font-size:0.7rem;">(38%)</span></div>
+              </div>
+              <div class="progress-track"><div class="progress-fill" style="width:38%;"></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;">
+                  <div style="width:10px;height:10px;border-radius:50%;background:var(--gold);"></div>Referral Income
+                </div>
+                <div style="font-family:var(--font-m);font-weight:700;">₹18,320 <span style="color:var(--muted);font-size:0.7rem;">(35%)</span></div>
+              </div>
+              <div class="progress-track"><div class="progress-fill gold" style="width:35%;"></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;font-size:0.85rem;">
+                  <div style="width:10px;height:10px;border-radius:50%;background:var(--green);"></div>Staking Rewards
+                </div>
+                <div style="font-family:var(--font-m);font-weight:700;">₹14,200 <span style="color:var(--muted);font-size:0.7rem;">(27%)</span></div>
+              </div>
+              <div class="progress-track"><div class="progress-fill green" style="width:27%;"></div></div>
+              <div class="neon-line"></div>
+              <div style="display:flex;justify-content:space-between;font-family:var(--font-d);font-weight:800;">
+                <span style="color:var(--muted);">TOTAL</span>
+                <span style="color:var(--green);">₹52,840</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── PAGE 7: ADMIN PANEL ── -->
+    <div class="page" id="page-admin">
+      <div class="main-content">
+
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+          <span class="badge badge-purple" style="font-size:0.8rem;padding:8px 16px;">🛡️ ADMIN MODE</span>
+          <span style="color:var(--muted);font-size:0.85rem;">Full platform control dashboard</span>
+        </div>
+
+        <div class="grid-4" style="margin-bottom:20px;">
+          <div class="stat-card"><div class="stat-label">TOTAL USERS</div><div class="stat-value">2,84,731</div><div class="stat-sub"><span style="color:var(--green)">▲ +1,240</span> this week</div><div class="stat-icon">👥</div></div>
+          <div class="stat-card"><div class="stat-label">PLATFORM VOLUME</div><div class="stat-value" style="color:var(--cyan);">₹42Cr</div><div class="stat-sub">24h transactions</div><div class="stat-icon">📊</div></div>
+          <div class="stat-card"><div class="stat-label">PENDING KYC</div><div class="stat-value" style="color:var(--gold);">342</div><div class="stat-sub">Awaiting review</div><div class="stat-icon">🔍</div></div>
+          <div class="stat-card"><div class="stat-label">PLATFORM FEES</div><div class="stat-value" style="color:var(--green);">₹8.4L</div><div class="stat-sub">Today's revenue</div><div class="stat-icon">💎</div></div>
+        </div>
+
+        <!-- User Management -->
+        <div class="glass card" style="margin-bottom:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+            <div class="section-title" style="margin-bottom:0;">USER MANAGEMENT</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <input class="input-field" style="width:200px;padding:8px 12px;font-size:0.85rem;" placeholder="🔍 Search users..."/>
+              <button class="btn btn-cyan btn-sm">EXPORT CSV</button>
+              <button class="btn btn-ghost btn-sm">FILTERS</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>USER ID</th><th>NAME</th><th>EMAIL</th><th>JOINED</th><th>BALANCE</th><th>KYC</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="td-mono" style="color:var(--cyan);">#001247</td>
+                  <td>Rahul Sharma</td>
+                  <td style="color:var(--muted);font-size:0.8rem;">rahul@aizon.in</td>
+                  <td style="color:var(--muted);font-size:0.8rem;">Jan 2026</td>
+                  <td class="td-mono">₹4,28,650</td>
+                  <td><span class="badge badge-green">✓ Verified</span></td>
+                  <td><span class="status-dot status-active"></span>Active</td>
+                  <td><div style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm">View</button><button class="btn btn-red btn-sm">Ban</button></div></td>
+                </tr>
+                <tr>
+                  <td class="td-mono" style="color:var(--cyan);">#001248</td>
+                  <td>Priya Singh</td>
+                  <td style="color:var(--muted);font-size:0.8rem;">priya@gmail.com</td>
+                  <td style="color:var(--muted);font-size:0.8rem;">Feb 2026</td>
+                  <td class="td-mono">₹1,24,500</td>
+                  <td><span class="badge badge-gold">⏳ Pending</span></td>
+                  <td><span class="status-dot status-active"></span>Active</td>
+                  <td><div style="display:flex;gap:4px;"><button class="btn btn-cyan btn-sm">Verify</button><button class="btn btn-red btn-sm">Ban</button></div></td>
+                </tr>
+                <tr>
+                  <td class="td-mono" style="color:var(--cyan);">#001249</td>
+                  <td>Vijay Kumar</td>
+                  <td style="color:var(--muted);font-size:0.8rem;">vijay@hotmail.com</td>
+                  <td style="color:var(--muted);font-size:0.8rem;">Mar 2026</td>
+                  <td class="td-mono">₹82,340</td>
+                  <td><span class="badge badge-red">✗ Rejected</span></td>
+                  <td><span class="status-dot status-inactive"></span>Suspended</td>
+                  <td><div style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm">View</button><button class="btn btn-green btn-sm">Restore</button></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Platform controls -->
+        <div class="grid-2">
+          <div class="glass card">
+            <div class="section-title">PLATFORM CONTROLS</div>
+            <div class="toggle-wrap"><div class="toggle-info"><h4>Maintenance Mode</h4><p>Temporarily disable user access</p></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+            <div class="toggle-wrap"><div class="toggle-info"><h4>New Registrations</h4><p>Allow new users to sign up</p></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+            <div class="toggle-wrap"><div class="toggle-info"><h4>Withdrawals Enabled</h4><p>Global withdrawal toggle</p></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+            <div class="toggle-wrap"><div class="toggle-info"><h4>Referral Program</h4><p>Enable MLM commission payouts</p></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+            <div style="display:flex;gap:8px;margin-top:16px;">
+              <button class="btn btn-red btn-sm" style="flex:1;">⚠ EMERGENCY HALT</button>
+              <button class="btn btn-cyan btn-sm" style="flex:1;">💾 SAVE CONFIG</button>
+            </div>
+          </div>
+          <div class="glass card">
+            <div class="section-title">RECENT ADMIN ACTIONS</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;">
+                <span style="font-size:1.2rem;">✅</span>
+                <div><div style="font-size:0.85rem;">KYC approved: Rahul Sharma</div><div style="font-size:0.7rem;color:var(--muted);">2 mins ago</div></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;">
+                <span style="font-size:1.2rem;">🚫</span>
+                <div><div style="font-size:0.85rem;">User suspended: #000892 (fraud)</div><div style="font-size:0.7rem;color:var(--muted);">18 mins ago</div></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;">
+                <span style="font-size:1.2rem;">💰</span>
+                <div><div style="font-size:0.85rem;">Manual payout: ₹50,000 to #001100</div><div style="font-size:0.7rem;color:var(--muted);">1 hour ago</div></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;">
+                <span style="font-size:1.2rem;">⚙️</span>
+                <div><div style="font-size:0.85rem;">Updated commission: L2 7% → 8%</div><div style="font-size:0.7rem;color:var(--muted);">3 hours ago</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── PAGE 8: DEPOSIT / WITHDRAW ── -->
+    <div class="page" id="page-deposit">
+      <div class="main-content" style="max-width:700px;">
+
+        <div class="dep-tabs">
+          <button class="dep-tab active green" id="depTab" onclick="switchDepTab('dep')">⬇ DEPOSIT</button>
+          <button class="dep-tab" id="witTab" onclick="switchDepTab('wit')">⬆ WITHDRAW</button>
+        </div>
+
+        <!-- DEPOSIT -->
+        <div id="dep-form">
+          <div class="steps" style="margin-bottom:24px;">
+            <div class="step active"><div class="step-num">1</div><span style="font-size:0.7rem;letter-spacing:1px;">SELECT</span></div>
+            <div class="step-line"></div>
+            <div class="step"><div class="step-num">2</div><span style="font-size:0.7rem;letter-spacing:1px;">CONFIRM</span></div>
+            <div class="step-line"></div>
+            <div class="step"><div class="step-num">3</div><span style="font-size:0.7rem;letter-spacing:1px;">COMPLETE</span></div>
+          </div>
+
+          <div class="glass card" style="margin-bottom:16px;">
+            <div class="section-title">SELECT ASSET & NETWORK</div>
+            <div class="input-wrap">
+              <label class="input-label">ASSET</label>
+              <select class="input-field">
+                <option>Bitcoin (BTC)</option>
+                <option>Ethereum (ETH)</option>
+                <option>Orizon (ORI)</option>
+                <option>Solana (SOL)</option>
+                <option>USDT (TRC20)</option>
+                <option>BNB (BSC)</option>
+              </select>
+            </div>
+            <div class="input-wrap">
+              <label class="input-label">NETWORK</label>
+              <select class="input-field">
+                <option>Ethereum (ERC-20)</option>
+                <option>BNB Smart Chain (BEP-20)</option>
+                <option>Polygon</option>
+                <option>Solana</option>
+                <option>TRON (TRC-20)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="glass card" style="margin-bottom:16px;text-align:center;">
+            <div class="section-title">DEPOSIT ADDRESS</div>
+            <div class="qr-box" id="depQR" style="margin-bottom:16px;"></div>
+            <div class="addr-box" style="margin-bottom:12px;">
+              0x4a8F3cDd...9dB7e2a1F8c3
+              <button class="copy-btn" onclick="this.textContent='✓ Copied'">📋 Copy</button>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+              <span class="badge badge-gold">⚠ Min: ₹500</span>
+              <span class="badge badge-cyan">Network Confirmations: 12</span>
+            </div>
+          </div>
+
+          <div class="glass card">
+            <div class="section-title">DEPOSIT HISTORY</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>ASSET</th><th>AMOUNT</th><th>VALUE (INR)</th><th>DATE</th><th>STATUS</th></tr></thead>
+                <tbody>
+                  <tr><td>BTC</td><td class="td-mono">0.00069</td><td class="td-mono">₹50,000</td><td style="color:var(--muted);font-size:0.8rem;">07 May 2026</td><td><span class="status-dot status-active"></span>Confirmed</td></tr>
+                  <tr><td>ETH</td><td class="td-mono">0.2</td><td class="td-mono">₹51,268</td><td style="color:var(--muted);font-size:0.8rem;">01 May 2026</td><td><span class="status-dot status-active"></span>Confirmed</td></tr>
+                  <tr><td>USDT</td><td class="td-mono">1000</td><td class="td-mono">₹83,400</td><td style="color:var(--muted);font-size:0.8rem;">15 Apr 2026</td><td><span class="status-dot status-active"></span>Confirmed</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- WITHDRAW -->
+        <div id="wit-form" style="display:none;">
+          <div class="glass card" style="margin-bottom:16px;">
+            <div class="section-title">WITHDRAWAL DETAILS</div>
+            <div class="input-wrap">
+              <label class="input-label">ASSET</label>
+              <select class="input-field">
+                <option>Bitcoin (BTC) — Balance: 0.00265</option>
+                <option>Ethereum (ETH) — Balance: 0.502</option>
+                <option>Orizon (ORI) — Balance: 14.1</option>
+                <option>USDT — Balance: 250</option>
+              </select>
+            </div>
+            <div class="input-wrap">
+              <label class="input-label">DESTINATION ADDRESS</label>
+              <input class="input-field" type="text" placeholder="0x... or paste wallet address"/>
+            </div>
+            <div class="input-wrap">
+              <label class="input-label">AMOUNT</label>
+              <div class="amount-input-wrap">
+                <input class="input-field" type="number" placeholder="0.00" style="padding-right:80px;"/>
+                <span class="currency-tag">MAX</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-top:6px;">
+                <span style="color:var(--muted);">Available: 0.502 ETH</span>
+                <span style="color:var(--muted);">≈ ₹1,28,340</span>
+              </div>
+            </div>
+            <div class="input-wrap">
+              <label class="input-label">NETWORK</label>
+              <select class="input-field">
+                <option>Ethereum Mainnet</option>
+                <option>BNB Smart Chain</option>
+                <option>Polygon</option>
+              </select>
+            </div>
+            <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:10px;padding:12px;margin-bottom:16px;">
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><span style="color:var(--muted);">Network Fee</span><span>₹420 (≈ 0.00016 ETH)</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><span style="color:var(--muted);">Platform Fee</span><span>0.1%</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;font-weight:700;"><span>You Receive</span><span style="color:var(--green);">₹—</span></div>
+            </div>
+            <div class="input-wrap">
+              <label class="input-label">2FA / OTP VERIFICATION</label>
+              <input class="input-field" type="text" placeholder="Enter 6-digit OTP"/>
+            </div>
+            <button class="btn btn-red" style="width:100%;">⬆ CONFIRM WITHDRAWAL</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── PAGE 9: TOKENOMICS ── -->
+    <div class="page" id="page-tokenomics">
+      <div class="main-content">
+
+        <!-- ORI Price Header -->
+        <div style="background:linear-gradient(135deg,rgba(0,229,255,0.07),rgba(26,111,255,0.07));border:1px solid var(--border2);border-radius:20px;padding:28px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;">
+          <div>
+            <div style="font-family:var(--font-m);font-size:0.65rem;color:var(--muted);letter-spacing:3px;margin-bottom:8px;">ORI TOKEN PRICE (INR)</div>
+            <div style="font-family:var(--font-d);font-size:3rem;font-weight:900;color:#fff;letter-spacing:-2px;">₹4,672 <span style="font-size:1rem;color:var(--green);">▲ +5.1%</span></div>
+            <div style="font-size:0.9rem;color:var(--muted);margin-top:4px;">≈ $55.90 USD · Market Cap: ₹217Cr</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="btn btn-cyan">🛒 BUY ORI</button>
+            <button class="btn btn-outline">📊 COINGECKO →</button>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:20px;">
+          <!-- Pie Chart -->
+          <div class="glass card">
+            <div class="section-title">TOKEN DISTRIBUTION</div>
+            <div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap;justify-content:center;">
+              <div class="pie-chart"></div>
+              <div class="pie-legend">
+                <div class="pie-item"><div class="pie-dot" style="background:var(--cyan);"></div><div><div style="font-weight:600;">Community Rewards</div><div style="font-size:0.75rem;color:var(--muted);">32% · 3,200,000 ORI</div></div></div>
+                <div class="pie-item"><div class="pie-dot" style="background:var(--blue);"></div><div><div style="font-weight:600;">Ecosystem Fund</div><div style="font-size:0.75rem;color:var(--muted);">20% · 2,000,000 ORI</div></div></div>
+                <div class="pie-item"><div class="pie-dot" style="background:var(--purple);"></div><div><div style="font-weight:600;">Team & Advisors</div><div style="font-size:0.75rem;color:var(--muted);">15% · 1,500,000 ORI</div></div></div>
+                <div class="pie-item"><div class="pie-dot" style="background:var(--gold);"></div><div><div style="font-weight:600;">Liquidity Pool</div><div style="font-size:0.75rem;color:var(--muted);">15% · 1,500,000 ORI</div></div></div>
+                <div class="pie-item"><div class="pie-dot" style="background:var(--green);"></div><div><div style="font-weight:600;">Public Sale</div><div style="font-size:0.75rem;color:var(--muted);">18% · 1,800,000 ORI</div></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Key Metrics -->
+          <div class="glass card">
+            <div class="section-title">TOKEN METRICS</div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;"><span style="color:var(--muted);">Token Name</span><span style="font-weight:600;">Orizon (ORI)</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;"><span style="color:var(--muted);">Blockchain</span><span class="chain-badge">◈ BNB Chain</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;"><span style="color:var(--muted);">Total Supply</span><span style="font-family:var(--font-m);">10,000,000 ORI</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;"><span style="color:var(--muted);">Circulating</span><span style="font-family:var(--font-m);color:var(--cyan);">470,000 ORI</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;"><span style="color:var(--muted);">Market Cap</span><span style="font-family:var(--font-m);color:var(--gold);">₹217Cr</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;"><span style="color:var(--muted);">24h Volume</span><span style="font-family:var(--font-m);">₹3.28Cr</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;"><span style="color:var(--muted);">All-Time High</span><span style="font-family:var(--font-m);color:var(--green);">₹5,040</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;"><span style="color:var(--muted);">Contract</span><span style="font-family:var(--font-m);font-size:0.75rem;color:var(--cyan);">0xORI...4dfC</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vesting -->
+        <div class="glass card" style="margin-bottom:20px;">
+          <div class="section-title">VESTING SCHEDULE</div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:6px;"><span>Community Rewards <span style="color:var(--muted);font-size:0.75rem;">32%</span></span><span style="color:var(--cyan);">Linear — 36 months</span></div>
+              <div class="progress-track"><div class="progress-fill" style="width:32%;"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:6px;"><span>Team & Advisors <span style="color:var(--muted);font-size:0.75rem;">15%</span></span><span style="color:var(--purple);">12mo cliff + 24mo vest</span></div>
+              <div class="progress-track"><div class="progress-fill" style="width:15%;background:linear-gradient(90deg,var(--purple),var(--pink));"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:6px;"><span>Public Sale <span style="color:var(--muted);font-size:0.75rem;">18%</span></span><span style="color:var(--green);">25% TGE + 6mo vest</span></div>
+              <div class="progress-track"><div class="progress-fill green" style="width:18%;"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:6px;"><span>Ecosystem Fund <span style="color:var(--muted);font-size:0.75rem;">20%</span></span><span style="color:var(--gold);">Governance controlled</span></div>
+              <div class="progress-track"><div class="progress-fill gold" style="width:20%;"></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── PAGE 10: SETTINGS ── -->
+    <div class="page" id="page-settings">
+      <div class="main-content" style="max-width:800px;">
+
+        <div class="grid-2" style="margin-bottom:20px;">
+          <!-- Profile -->
+          <div class="glass card">
+            <div class="section-title">PROFILE SETTINGS</div>
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+              <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:1.5rem;font-weight:900;color:#000;">RS</div>
+              <div>
+                <div style="font-size:1.1rem;font-weight:700;">Rahul Sharma</div>
+                <div style="font-size:0.8rem;color:var(--muted);">rahul@aizon.in</div>
+                <span class="badge badge-green" style="margin-top:6px;">✓ KYC VERIFIED</span>
+              </div>
+            </div>
+            <div class="input-wrap"><label class="input-label">DISPLAY NAME</label><input class="input-field" value="Rahul Sharma"/></div>
+            <div class="input-wrap"><label class="input-label">EMAIL</label><input class="input-field" value="rahul@aizon.in" type="email"/></div>
+            <div class="input-wrap"><label class="input-label">MOBILE</label><input class="input-field" value="+91 98765 43210" type="tel"/></div>
+            <button class="btn btn-cyan btn-sm">💾 SAVE CHANGES</button>
+          </div>
+
+          <!-- Security -->
+          <div class="glass card">
+            <div class="section-title">SECURITY</div>
+            <div class="toggle-wrap"><div class="toggle-info"><h4>Two-Factor Auth (2FA)</h4><p>Google Authenticator or SMS OTP</p></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+            <div class="toggle-wrap"><div class="toggle-info"><h4>Biometric Login</h4><p>Fingerprint / Face ID support</p></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+            <div class="toggle-wrap"><div class="toggle-info"><h4>Login Notifications</h4><p>Email alert on new device login</p></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+            <div class="toggle-wrap"><div class="toggle-info"><h4>Withdrawal Whitelist</h4><p>Only allow pre-approved addresses</p></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+            <div style="margin-top:16px;">
+              <button class="btn btn-outline btn-sm" style="width:100%;margin-bottom:8px;">🔑 CHANGE PASSWORD</button>
+              <button class="btn btn-ghost btn-sm" style="width:100%;">📱 MANAGE 2FA DEVICES</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preferences -->
+        <div class="glass card" style="margin-bottom:20px;">
+          <div class="section-title">PREFERENCES</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap;">
+            <div class="input-wrap"><label class="input-label">DEFAULT CURRENCY</label>
+              <select class="input-field"><option>₹ INR — Indian Rupee</option><option>$ USD</option><option>€ EUR</option></select>
+            </div>
+            <div class="input-wrap"><label class="input-label">DEFAULT NETWORK</label>
+              <select class="input-field"><option>Ethereum</option><option>BNB Chain</option><option>Polygon</option></select>
+            </div>
+            <div class="input-wrap"><label class="input-label">LANGUAGE</label>
+              <select class="input-field"><option>English</option><option>Hindi</option><option>Tamil</option><option>Telugu</option></select>
+            </div>
+            <div class="input-wrap"><label class="input-label">TIMEZONE</label>
+              <select class="input-field"><option>Asia/Kolkata (IST +5:30)</option><option>UTC</option></select>
+            </div>
+          </div>
+          <div class="toggle-wrap"><div class="toggle-info"><h4>Price Alerts</h4><p>Push notifications for price movements</p></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+          <div class="toggle-wrap"><div class="toggle-info"><h4>Transaction Emails</h4><p>Email receipt for every transaction</p></div><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
+          <div class="toggle-wrap"><div class="toggle-info"><h4>Marketing Emails</h4><p>Platform updates and promotions</p></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+          <div style="margin-top:16px;">
+            <button class="btn btn-cyan btn-sm">💾 SAVE PREFERENCES</button>
+          </div>
+        </div>
+
+        <!-- KYC -->
+        <div class="glass card" style="margin-bottom:20px;">
+          <div class="section-title">KYC / VERIFICATION</div>
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px;">
+              <div style="margin-bottom:10px;"><span class="badge badge-green" style="font-size:0.8rem;padding:8px 14px;">✓ IDENTITY VERIFIED</span></div>
+              <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;">KYC Level 2 completed. Withdrawal limit: ₹10L/day. Upgrade to Level 3 to remove limits.</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <button class="btn btn-outline btn-sm">⬆ UPGRADE KYC</button>
+              <button class="btn btn-ghost btn-sm">📋 VIEW DOCUMENTS</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div style="background:rgba(255,51,102,0.05);border:1px solid rgba(255,51,102,0.2);border-radius:16px;padding:20px;">
+          <div style="font-family:var(--font-d);font-size:0.75rem;color:var(--red);letter-spacing:2px;margin-bottom:12px;">⚠ DANGER ZONE</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm">🔒 FREEZE ACCOUNT</button>
+            <button class="btn btn-red btn-sm">💀 DELETE ACCOUNT</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /appMain -->
+</div><!-- /app-shell -->
+
+<style>
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+</style>
+
+<script>
+// ══════════════════════════════════════
+//  APP STATE
+// ══════════════════════════════════════
+const appPages = ['page-dashboard','page-wallet','page-referral','page-earnings','page-admin','page-deposit','page-tokenomics','page-settings'];
+const pageTitles = {
+  'page-dashboard': 'DASHBOARD',
+  'page-wallet': 'WALLET',
+  'page-referral': 'MLM REFERRAL',
+  'page-earnings': 'EARNINGS',
+  'page-admin': 'ADMIN PANEL',
+  'page-deposit': 'DEPOSIT / WITHDRAW',
+  'page-tokenomics': 'TOKENOMICS',
+  'page-settings': 'SETTINGS',
+};
+
+// ══════════════════════════════════════
+//  PAGE NAVIGATION
+// ══════════════════════════════════════
+function goPage(id) {
+  // Hide all pages (landing & auth)
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('app-shell').style.display = 'none';
+
+  if (appPages.includes(id)) {
+    // Show app shell
+    document.getElementById('app-shell').style.display = 'flex';
+    appPages.forEach(pid => {
+      const el = document.getElementById(pid);
+      if (el) el.classList.remove('active');
+    });
+    const target = document.getElementById(id);
+    if (target) target.classList.add('active');
+  } else {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('active');
+  }
+}
+
+function appGoPage(pageId, navId) {
+  // Deactivate all app pages
+  appPages.forEach(pid => {
+    const el = document.getElementById(pid);
+    if (el) el.classList.remove('active');
+  });
+  // Activate target
+  const target = document.getElementById(pageId);
+  if (target) target.classList.add('active');
+  // Update nav
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const nav = document.getElementById(navId);
+  if (nav) nav.classList.add('active');
+  // Update topbar title
+  document.getElementById('topbarTitle').textContent = pageTitles[pageId] || '';
+  // Close sidebar on mobile
+  closeSidebar();
+}
+
+// ══════════════════════════════════════
+//  SIDEBAR
+// ══════════════════════════════════════
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('mobileOverlay');
+  sb.classList.toggle('open');
+  ov.style.display = sb.classList.contains('open') ? 'block' : 'none';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('mobileOverlay').style.display = 'none';
+  document.getElementById('sidebarOverlay').classList.remove('visible');
+}
+
+// ══════════════════════════════════════
+//  AUTH TABS
+// ══════════════════════════════════════
+function switchAuthTab(tab) {
+  document.getElementById('auth-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('auth-signup').style.display = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+}
+
+// ══════════════════════════════════════
+//  DEP TABS
+// ══════════════════════════════════════
+function switchDepTab(tab) {
+  const isD = tab === 'dep';
+  document.getElementById('dep-form').style.display = isD ? 'block' : 'none';
+  document.getElementById('wit-form').style.display = !isD ? 'block' : 'none';
+  document.getElementById('depTab').className = 'dep-tab' + (isD ? ' active green' : '');
+  document.getElementById('witTab').className = 'dep-tab' + (!isD ? ' active red' : '');
+}
+
+// ══════════════════════════════════════
+//  QR CODE GENERATOR (CSS grid)
+// ══════════════════════════════════════
+function generateQR(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const pattern = [
+    1,1,1,1,1,1,1,0,1,1,
+    1,0,0,0,0,0,1,0,0,1,
+    1,0,1,1,1,0,1,0,1,0,
+    1,0,1,1,1,0,1,0,1,1,
+    1,0,1,1,1,0,1,0,0,1,
+    1,0,0,0,0,0,1,0,1,0,
+    1,1,1,1,1,1,1,0,1,1,
+    0,0,0,0,0,0,0,0,0,1,
+    1,0,1,1,0,1,1,0,1,0,
+    0,1,0,0,1,1,0,1,0,1,
+  ];
+  el.innerHTML = pattern.map(b => `<div class="qr-cell${b?' on':''}"></div>`).join('');
+}
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  generateQR('qrBox');
+  generateQR('depQR');
+  // Start on landing
+  goPage('page-landing');
+  // Ticker scroll duplication
+  const ticker = document.querySelector('.ticker-strip > div');
+  // Animate bar heights with random values
+  document.querySelectorAll('.bar').forEach(bar => {
+    if (!bar.style.height) {
+      bar.style.height = (20 + Math.random() * 80) + '%';
+    }
+  });
+});
+</script>
+</body>
+</html>
